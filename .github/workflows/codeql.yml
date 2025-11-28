@@ -74,7 +74,7 @@ jobs:
       if: matrix.language == 'swift'
       run: |
         npm ci
-        cd example && npm ci
+        cd example && npm install
         cd ios && pod install
 
     # Initializes the CodeQL tools for scanning.
