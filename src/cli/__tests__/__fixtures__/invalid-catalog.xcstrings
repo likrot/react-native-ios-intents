@@ -1,0 +1,12 @@
+{
+  "sourceLanguage": "en",
+  "version": "1.0",
+  "strings": {
+    "broken.key": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          // This comment makes it invalid JSON
+          "stringUnit": {
+            "state": "translated",
+            "value": "This won't parse"
