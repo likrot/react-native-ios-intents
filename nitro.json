@@ -1,0 +1,17 @@
+{
+  "cxxNamespace": ["iosintents"],
+  "ios": {
+    "iosModuleName": "IosIntents"
+  },
+  "android": {
+    "androidNamespace": ["iosintents"],
+    "androidCxxLibName": "iosintents"
+  },
+  "autolinking": {
+    "IosIntents": {
+      "swift": "IosIntents",
+      "kotlin": "IosIntents"
+    }
+  },
+  "ignorePaths": ["node_modules", "example"]
+}
