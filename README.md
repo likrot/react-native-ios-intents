@@ -195,7 +195,7 @@ The current state dialog feature with `requiresConfirmation: true` uses `request
 - `@Parameter` for confirmation values
 - Proper `IntentConfirmation` structure
 
-See: [Apple App Intents Documentation - Confirmation](https://developer.apple.com/documentation/appintents/dynamicoptionsprovider) //TODO: verify
+See: [Apple App Intents Documentation - Confirmation](https://developer.apple.com/documentation/appintents/dynamicoptionsprovider)
 
 ### Shortcut Parameters
 

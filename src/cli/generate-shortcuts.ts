@@ -157,7 +157,7 @@ async function main(): Promise<void> {
       );
     } else if (isLibrary) {
       // Library mode: for library development without --example
-      const projectRoot = path.resolve(__dirname, '../..');//TODO: validate if this navigation is reliable
+      const projectRoot = path.resolve(__dirname, '../..');
       configPath = path.resolve(projectRoot, 'lib/module/shortcuts.config.js');
       outputDir = path.resolve(projectRoot, 'ios');
 
@@ -352,7 +352,7 @@ async function main(): Promise<void> {
     });
     console.log('');
 
-    if (!isLibrary) {//TODO: vericy with actual state before publishing
+    if (!isLibrary) {
       console.log('📝 Next steps:');
       console.log(
         '   1. Add GeneratedAppIntents.swift to your Xcode project (if not already added)'
