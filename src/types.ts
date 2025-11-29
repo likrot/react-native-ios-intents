@@ -117,7 +117,7 @@ export interface ShortcutsConfig {
    * Note: You'll need to add the generated Localizable.xcstrings
    * file to your Xcode project to use translations.
    */
-  localization?: boolean; //TODO: we should generate only if not exists, otherwise we should probably edit existing file to prevent user from losing progress
+  localization?: boolean;
   /** Optional App Group ID (defaults to group.<bundle-id>) */
   appGroupId?: string;
 }

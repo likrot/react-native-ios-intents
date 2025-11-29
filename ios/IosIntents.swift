@@ -1,8 +1,6 @@
 import Foundation
 import AppIntents
 
-///TODO: add tests if possible
-
 /// Native module for iOS App Intents integration
 /// Handles shortcut invocation callbacks from generated AppIntents
 ///
