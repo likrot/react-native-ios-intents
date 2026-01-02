@@ -58,11 +58,9 @@ const config: ShortcutsConfig = {
 ### With `requiresConfirmation: true` (default)
 
 - Siri shows the message and asks user to confirm or cancel
-- If user **confirms**, shortcut continues to React Native handler
+- If user **confirms**, shortcut continues to React Native handler with `userConfirmed: true`
 - If user **cancels**, shortcut is aborted (React Native not invoked)
-- Your handler receives the shortcut invocation as normal
-
-**Current Limitation:** The confirmation status (`userConfirmed`) is not yet passed to JavaScript. Your handler cannot distinguish between "user confirmed override" vs "no dialog shown". This will be implemented in a future version.
+- Your handler can check `shortcut.userConfirmed` to detect confirmation status
 
 ### With `requiresConfirmation: false`
 
@@ -166,9 +164,9 @@ SiriShortcuts.updateAppState({
 - Supports strings and numbers
 - If a variable isn't found, the placeholder remains unchanged
 
-## Current Limitations & Future Plans
+## User Confirmation Detection
 
-### User Confirmation Detection
+You can detect whether the user confirmed a dialog by checking the `userConfirmed` field:
 
 ```typescript
 import type { ShortcutInvocation } from './shortcuts.generated';
@@ -187,14 +185,3 @@ const subscription = SiriShortcuts.addEventListener<ShortcutInvocation>('shortcu
   }
 });
 ```
-
-### What Works Now
-
-✅ State synchronization (`updateAppState`)
-✅ State-based dialog display
-✅ User confirmation dialogs (Swift side)
-✅ Message-only dialogs (`requiresConfirmation: false`)
-✅ Dynamic message interpolation (`${variableName}`)
-✅ Preventing React Native invocation for message-only dialogs
-
-The feature is functional for most use cases - you just need to re-check app state in your handler rather than relying on a `userConfirmed` flag.
