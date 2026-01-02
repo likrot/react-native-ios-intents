@@ -97,8 +97,17 @@ function App() {
     const subscription = SiriShortcuts.addEventListener<ShortcutInvocation>('shortcut', (shortcut, respond) => {
       // TypeScript now knows all possible identifiers!
       if (shortcut.identifier === 'startTimer') {
-        startTimer();
-        respond({ message: "Timer started!" });
+        // Handle state-based confirmations with userConfirmed
+        if (shortcut.userConfirmed) {
+          // User confirmed to override existing timer
+          stopCurrentTimer();
+          startNewTimer();
+          respond({ message: "New timer started!" });
+        } else {
+          // Normal start
+          startTimer();
+          respond({ message: "Timer started!" });
+        }
       }
     });
 
@@ -122,6 +131,7 @@ Listen for Siri shortcut invocations with optional type safety.
 const subscription = SiriShortcuts.addEventListener('shortcut', (shortcut, respond) => {
   // shortcut.identifier is string
   // shortcut.parameters is Record<string, any>
+  // shortcut.userConfirmed is boolean | undefined
 });
 
 // Type-safe usage with generated types (recommended)
@@ -134,6 +144,15 @@ const subscription = SiriShortcuts.addEventListener<ShortcutInvocation>('shortcu
   if (shortcut.identifier === 'addTask') {
     // TypeScript knows shortcut.parameters.taskName exists and is a string
     console.log(shortcut.parameters.taskName); // Autocomplete works!
+  }
+
+  // Check if user confirmed a state dialog
+  if (shortcut.userConfirmed === true) {
+    // User confirmed an override dialog
+  } else if (shortcut.userConfirmed === false) {
+    // User cancelled (though handler typically won't receive this)
+  } else {
+    // No confirmation dialog was shown
   }
 
   respond({ message: "Done!" });
