@@ -70,6 +70,18 @@ jobs:
       with:
         node-version: '24'
 
+    - name: Cache CocoaPods
+      if: matrix.language == 'swift'
+      uses: actions/cache@v4
+      with:
+        path: |
+          example/ios/Pods
+          ~/Library/Caches/CocoaPods
+          ~/.cocoapods
+        key: pods-${{ runner.os }}-${{ hashFiles('example/ios/Podfile.lock') }}
+        restore-keys: |
+          pods-${{ runner.os }}-
+
     - name: Install dependencies
       if: matrix.language == 'swift'
       run: |
@@ -105,6 +117,7 @@ jobs:
           -workspace IosIntentsExample.xcworkspace \
           -scheme IosIntentsExample \
           -sdk iphoneos \
+          ARCHS=arm64 \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGNING_ALLOWED=NO
 
