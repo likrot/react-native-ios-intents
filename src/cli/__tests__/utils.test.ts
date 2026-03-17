@@ -11,9 +11,10 @@ import {
   generateStringCatalog,
   mergeStringCatalog,
   mergeAppShortcutsStrings,
+  generateTypeScriptTypes,
 } from '../utils';
-import type { ShortcutsConfig } from '../../types';
-import { mockShortcutsConfig } from './__fixtures__/shortcuts.config.mock';
+import type { IntentsConfig } from '../../types';
+import { mockIntentsConfig } from './__fixtures__/shortcuts.config.mock';
 
 // Helper to load fixture files
 const loadFixture = (filename: string): string => {
@@ -88,7 +89,7 @@ describe('CLI Utils', () => {
 
   describe('extractLocalizableStrings', () => {
     it('should extract titles, descriptions, and state dialog messages', () => {
-      const config: ShortcutsConfig = {
+      const config: IntentsConfig = {
         shortcuts: [
           {
             identifier: 'test',
@@ -111,7 +112,7 @@ describe('CLI Utils', () => {
     });
 
     it('should handle multiple shortcuts', () => {
-      const config: ShortcutsConfig = {
+      const config: IntentsConfig = {
         shortcuts: [
           { identifier: 'start', title: 'Start', phrases: [] },
           { identifier: 'stop', title: 'Stop', phrases: [] },
@@ -129,7 +130,7 @@ describe('CLI Utils', () => {
       [['Start', 'Begin'], ['Start in ${applicationName}', 'Begin in ${applicationName}']],
       [[], []],
     ])('should convert phrases %j to %j', (input, expected) => {
-      const config: ShortcutsConfig = {
+      const config: IntentsConfig = {
         shortcuts: [{ identifier: 'test', title: 'Test', phrases: input }],
       };
       expect(extractAppShortcutsPhrases(config)).toEqual(expected);
@@ -462,7 +463,7 @@ This is not a valid line
 
   describe('extractLocalizableStrings with fixture', () => {
     it('should extract strings from realistic config', () => {
-      const result = extractLocalizableStrings(mockShortcutsConfig);
+      const result = extractLocalizableStrings(mockIntentsConfig);
 
       // Titles
       expect(result['startTimer.title']).toBe('Start Timer');
@@ -483,6 +484,90 @@ This is not a valid line
       // System messages
       expect(result['system.error.appGroupFailed']).toBe('Failed to communicate with app');
       expect(result['system.timeout']).toBe('Done');
+    });
+  });
+
+  describe('generateTypeScriptTypes', () => {
+    it('should not include LA button identifiers in ShortcutInvocation', () => {
+      const config: IntentsConfig = {
+        shortcuts: [
+          {
+            identifier: 'startTimer',
+            title: 'Start Timer',
+            phrases: ['Start timer'],
+          },
+        ],
+        liveActivities: [
+          {
+            identifier: 'timerActivity',
+            attributes: { taskName: { type: 'string' as const } },
+            contentState: { isRunning: { type: 'boolean' as const } },
+            lockScreenLayout: {
+              type: 'button' as const,
+              shortcutIdentifier: 'pauseTimer',
+              title: 'Pause',
+            },
+          },
+        ],
+      };
+
+      const result = generateTypeScriptTypes(config);
+
+      // ShortcutInvocation should only contain Siri shortcuts
+      expect(result).toContain("identifier: 'startTimer'");
+
+      // Extract just the ShortcutInvocation type (between its declaration and the next export)
+      const shortcutTypeMatch = result.match(/export type ShortcutInvocation =([\s\S]*?);/);
+      expect(shortcutTypeMatch).not.toBeNull();
+      expect(shortcutTypeMatch![1]).not.toContain('pauseTimer');
+    });
+
+    it('should generate separate LiveActivityButtonAction type for button intents', () => {
+      const config: IntentsConfig = {
+        shortcuts: [
+          {
+            identifier: 'startTimer',
+            title: 'Start Timer',
+            phrases: ['Start timer'],
+          },
+        ],
+        liveActivities: [
+          {
+            identifier: 'timerActivity',
+            attributes: { taskName: { type: 'string' as const } },
+            contentState: { isRunning: { type: 'boolean' as const } },
+            lockScreenLayout: {
+              type: 'vstack' as const,
+              children: [
+                { type: 'button' as const, shortcutIdentifier: 'pauseTimer', title: 'Pause' },
+                { type: 'button' as const, shortcutIdentifier: 'resumeTimer', title: 'Resume' },
+              ],
+            },
+          },
+        ],
+      };
+
+      const result = generateTypeScriptTypes(config);
+
+      expect(result).toContain('export type LiveActivityButtonAction =');
+      expect(result).toContain("identifier: 'pauseTimer'");
+      expect(result).toContain("identifier: 'resumeTimer'");
+    });
+
+    it('should not generate LiveActivityButtonAction when no buttons exist', () => {
+      const config: IntentsConfig = {
+        shortcuts: [
+          {
+            identifier: 'startTimer',
+            title: 'Start Timer',
+            phrases: ['Start timer'],
+          },
+        ],
+      };
+
+      const result = generateTypeScriptTypes(config);
+
+      expect(result).not.toContain('LiveActivityButtonAction');
     });
   });
 });

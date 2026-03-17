@@ -5,8 +5,8 @@ import {
   generateAppShortcut,
   generateSwiftFile,
 } from '../swift-codegen';
-import type { ShortcutsConfig, ShortcutDefinition } from '../../types';
-import { mockShortcutsConfig, minimalConfig } from './__fixtures__/shortcuts.config.mock';
+import type { IntentsConfig, ShortcutDefinition } from '../../types';
+import { mockIntentsConfig, minimalConfig } from './__fixtures__/shortcuts.config.mock';
 
 describe('Swift Code Generation', () => {
   describe('generateMessageInterpolation', () => {
@@ -298,7 +298,7 @@ describe('Swift Code Generation', () => {
       const result = generateIntentStruct(basicShortcut, false);
 
       expect(result).toContain('CFNotificationCenterPostNotification');
-      expect(result).toContain('eu.eblank.likrot.iosintents.shortcut');
+      expect(result).toContain('eu.eblank.likrot.iosintents.\\(bundleId).shortcut');
     });
 
     it('should include polling loop with timeout', () => {
@@ -383,7 +383,7 @@ describe('Swift Code Generation', () => {
   });
 
   describe('generateSwiftFile', () => {
-    const config: ShortcutsConfig = {
+    const config: IntentsConfig = {
       shortcuts: [
         {
           identifier: 'startTimer',
@@ -424,7 +424,7 @@ describe('Swift Code Generation', () => {
     });
 
     it('should use custom appGroupId when provided', () => {
-      const configWithGroup: ShortcutsConfig = {
+      const configWithGroup: IntentsConfig = {
         ...config,
         appGroupId: 'group.com.example.app',
       };
@@ -458,7 +458,7 @@ describe('Swift Code Generation', () => {
     });
 
     it('should handle complex fixture config with all features', () => {
-      const result = generateSwiftFile(mockShortcutsConfig, true);
+      const result = generateSwiftFile(mockIntentsConfig, true);
 
       // Should include all shortcuts from mock config
       expect(result).toContain('struct StartTimerIntent: AppIntent');
@@ -496,8 +496,8 @@ describe('Swift Code Generation', () => {
     });
 
     it('should respect localization flag from fixture', () => {
-      // mockShortcutsConfig has localization: true
-      const withLocalization = generateSwiftFile(mockShortcutsConfig, true);
+      // mockIntentsConfig has localization: true
+      const withLocalization = generateSwiftFile(mockIntentsConfig, true);
       expect(withLocalization).toContain('LocalizedStringResource("startTimer.title"');
 
       // minimalConfig has no localization flag (defaults to false)
@@ -507,7 +507,7 @@ describe('Swift Code Generation', () => {
     });
 
     it('should generate proper state dialog with variable interpolation', () => {
-      const result = generateSwiftFile(mockShortcutsConfig, false);
+      const result = generateSwiftFile(mockIntentsConfig, false);
 
       // checkStatus shortcut has state dialog with interpolation
       expect(result).toContain('struct CheckStatusIntent: AppIntent');

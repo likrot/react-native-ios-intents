@@ -1,3 +1,5 @@
+import type { LiveActivityDefinition } from './liveactivity-types';
+
 /**
  * Allowed value types for app state
  * - boolean: stored as number (0 or 1)
@@ -106,9 +108,31 @@ export interface ShortcutDefinition {
 /**
  * Configuration options for initializing shortcuts
  */
-export interface ShortcutsConfig {
+export interface IntentsConfig {
   /** Array of shortcut definitions to register */
   shortcuts: ShortcutDefinition[];
+  /**
+   * Optional Live Activity definitions (iOS 16.1+)
+   * Each definition generates Swift ActivityAttributes, SwiftUI views, and Widget Bundle code
+   */
+  liveActivities?: LiveActivityDefinition[];
+  /**
+   * Whether to generate a @main WidgetBundle in GeneratedLiveActivity.swift (default: true)
+   *
+   * Set to false if your app already has a Widget Extension with its own @main entry point.
+   * When false, only the individual widget structs are generated — you must add them
+   * to your existing WidgetBundle manually.
+   *
+   * @example
+   * // Your existing WidgetBundle:
+   * // @main struct MyWidgetBundle: WidgetBundle {
+   * //     var body: some Widget {
+   * //         MyExistingWidget()
+   * //         TimerActivityWidget()  // <-- add generated widget here
+   * //     }
+   * // }
+   */
+  liveActivityWidgetBundle?: boolean;
   /**
    * Enable localization support (optional, default: false)
    * When true, generates a .xcstrings file for translations
@@ -120,6 +144,14 @@ export interface ShortcutsConfig {
   localization?: boolean;
   /** Optional App Group ID (defaults to group.<bundle-id>) */
   appGroupId?: string;
+  /**
+   * Widget Extension target directory name (e.g., 'LiveActivityWidget')
+   *
+   * When set, the generator will automatically copy GeneratedLiveActivity.swift
+   * to `ios/<widgetExtensionTarget>/` in addition to the main app directory.
+   * This eliminates the manual copy step for Widget Extension setup.
+   */
+  widgetExtensionTarget?: string;
 }
 
 /**
@@ -188,3 +220,6 @@ export type ShortcutListener = (
   shortcut: ShortcutInvocation,
   respond: RespondCallback
 ) => void | Promise<void>;
+
+/** @deprecated Use IntentsConfig instead */
+export type ShortcutsConfig = IntentsConfig;

@@ -13,8 +13,11 @@ class IosIntents: HybridIosIntentsSpec {
 
     // MARK: - Constants
 
-    /// Darwin notification name for cross-process communication
-    private static let darwinNotificationName = "eu.eblank.likrot.iosintents.shortcut" as CFString
+    /// Darwin notification name for cross-process communication.
+    /// Includes bundle ID to prevent interference between apps using this library.
+    private static var darwinNotificationName: CFString {
+        "eu.eblank.likrot.iosintents.\(Bundle.main.bundleIdentifier ?? "unknown").shortcut" as CFString
+    }
 
     // MARK: - App Group Configuration
 
@@ -59,6 +62,12 @@ class IosIntents: HybridIosIntentsSpec {
         // before the callback has been set. Safe because setShortcutCallback()
         // is only called from main queue, never from callbackQueue.
         set { callbackQueue.sync { self._shortcutCallback = newValue } }
+    }
+
+    private var _liveActivityButtonCallback: ((NativeLiveActivityButtonData) -> Void)?
+    private var liveActivityButtonCallback: ((NativeLiveActivityButtonData) -> Void)? {
+        get { callbackQueue.sync { _liveActivityButtonCallback } }
+        set { callbackQueue.sync { self._liveActivityButtonCallback = newValue } }
     }
 
     // MARK: - Shared Instance
@@ -137,10 +146,44 @@ class IosIntents: HybridIosIntentsSpec {
             return
         }
 
-        // Read timestamp to detect race conditions
+        // Read timestamp and source to detect race conditions and route events
         let timestamp = defaults.double(forKey: "IosIntentsCommandTimestamp")
+        let source = defaults.string(forKey: "IosIntentsSource")
 
-        print("[IosIntents] Pending command found: \(pendingCommand), nonce: \(commandNonce), timestamp: \(timestamp)")
+        print("[IosIntents] Pending command found: \(pendingCommand), nonce: \(commandNonce), timestamp: \(timestamp), source: \(source ?? "shortcut")")
+
+        // If source is "liveActivity", route to LA button callback
+        if source == "liveActivity" {
+            let buttonData = NativeLiveActivityButtonData(
+                identifier: pendingCommand,
+                nonce: commandNonce
+            )
+
+            DispatchQueue.main.async {
+                if let callback = self.liveActivityButtonCallback {
+                    // Only clear UserDefaults when the callback is present to consume the command.
+                    // If no callback is registered yet (cold start), leave the command pending
+                    // so setLiveActivityButtonCallback() → handleDarwinNotification() picks it up.
+                    let currentNonce = defaults.string(forKey: "IosIntentsCommandNonce")
+                    if currentNonce == commandNonce {
+                        defaults.removeObject(forKey: "IosIntentsPendingCommand")
+                        defaults.removeObject(forKey: "IosIntentsCommandNonce")
+                        defaults.removeObject(forKey: "IosIntentsCommandTimestamp")
+                        defaults.removeObject(forKey: "IosIntentsSource")
+                        print("[IosIntents] Live Activity command cleared")
+                    }
+
+                    callback(buttonData)
+                    print("[IosIntents] Live Activity button callback invoked on main queue")
+                } else {
+                    // No LA button callback registered yet (cold start).
+                    // Leave the command in UserDefaults — setLiveActivityButtonCallback()
+                    // calls handleDarwinNotification() on registration, so it will be picked up.
+                    print("[IosIntents] No LA button callback yet, command stays pending for pickup")
+                }
+            }
+            return
+        }
 
         // Read user confirmation status
         var userConfirmed: Bool? = nil
@@ -195,6 +238,7 @@ class IosIntents: HybridIosIntentsSpec {
             defaults.removeObject(forKey: "IosIntentsCommandNonce")
             defaults.removeObject(forKey: "IosIntentsCommandTimestamp")
             defaults.removeObject(forKey: "IosIntentsUserConfirmed")
+            defaults.removeObject(forKey: "IosIntentsSource")
 
             // Clean up all parameter keys and their type markers
             for key in allKeys {
@@ -230,6 +274,19 @@ class IosIntents: HybridIosIntentsSpec {
         // Check for pending commands immediately after callback is registered
         // This handles cold starts where the app was launched by Siri
         print("[IosIntents] Checking for pending commands (callback now ready)...")
+        handleDarwinNotification()
+    }
+
+    /// Sets a callback to be invoked when a Live Activity button is tapped
+    ///
+    /// - Parameter callback: Function to call with button action data
+    /// - Thread Safety: Can be called from any thread
+    public func setLiveActivityButtonCallback(callback: @escaping (NativeLiveActivityButtonData) -> Void) throws {
+        self.liveActivityButtonCallback = callback
+        print("[IosIntents] Live Activity button callback registered")
+
+        // Check for pending commands (handles cold start from LA button tap)
+        print("[IosIntents] Checking for pending commands (LA button callback now ready)...")
         handleDarwinNotification()
     }
 

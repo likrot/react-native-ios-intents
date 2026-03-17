@@ -1,6 +1,6 @@
 {
   "name": "react-native-ios-intents",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "React Native library for iOS Siri Shortcuts, Live Activities, and App Intents",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -32,6 +32,8 @@
     "react-native.config.js",
     "!ios/build",
     "!ios/GeneratedAppIntents.swift",
+    "!ios/GeneratedLiveActivity.swift",
+    "!ios/GeneratedLiveActivityModule.swift",
     "!**/__tests__",
     "!**/__fixtures__",
     "!**/__mocks__",

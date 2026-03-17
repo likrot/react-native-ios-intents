@@ -25,6 +25,16 @@ export interface NativeShortcutData {
 }
 
 /**
+ * Live Activity button data passed from native to JS
+ */
+export interface NativeLiveActivityButtonData {
+  /** The button's shortcut identifier */
+  identifier: string;
+  /** Unique nonce for deduplication */
+  nonce: string;
+}
+
+/**
  * Native bridge for iOS App Intents functionality
  *
  * This interface defines the low-level native operations.
@@ -40,6 +50,13 @@ export interface IosIntents extends HybridObject<{ ios: 'swift' }> {
    * @param callback - Function to call with shortcut data
    */
   setShortcutCallback(callback: (shortcut: NativeShortcutData) => void): void;
+
+  /**
+   * Sets a callback to be invoked when a Live Activity button is tapped
+   *
+   * @param callback - Function to call with button action data
+   */
+  setLiveActivityButtonCallback(callback: (data: NativeLiveActivityButtonData) => void): void;
 
   /**
    * Reads a string value from the shared UserDefaults (App Group)

@@ -1,10 +1,10 @@
-import type { ShortcutsConfig } from '../../../types';
+import type { IntentsConfig } from '../../../types';
 
 /**
  * Mock shortcuts configuration for testing
  * Includes various features: state dialogs, descriptions, multiple phrases
  */
-export const mockShortcutsConfig: ShortcutsConfig = {
+export const mockIntentsConfig: IntentsConfig = {
   shortcuts: [
     {
       identifier: 'startTimer',
@@ -72,7 +72,7 @@ export const mockShortcutsConfig: ShortcutsConfig = {
 /**
  * Minimal config for basic testing
  */
-export const minimalConfig: ShortcutsConfig = {
+export const minimalConfig: IntentsConfig = {
   shortcuts: [
     {
       identifier: 'simpleAction',
@@ -85,7 +85,7 @@ export const minimalConfig: ShortcutsConfig = {
 /**
  * Config without optional features
  */
-export const noLocalizationConfig: ShortcutsConfig = {
+export const noLocalizationConfig: IntentsConfig = {
   shortcuts: [
     {
       identifier: 'basicAction',

@@ -21,6 +21,7 @@ cd ios && pod install
 App Intents run in a separate process and need App Groups to communicate with your main app.
 
 In Xcode:
+
 1. Select your target → Signing & Capabilities
 2. Click "+ Capability"
 3. Add "App Groups"
@@ -30,6 +31,7 @@ In Xcode:
 ### 3. Enable Siri
 
 In Xcode:
+
 1. Select your target → Signing & Capabilities
 2. Click "+ Capability"
 3. Add "Siri"
@@ -42,11 +44,11 @@ Run the code generator to create a config template:
 npx react-native-ios-intents generate
 ```
 
-This creates `shortcuts.config.ts` in your project root with an example shortcut.
+This creates `intents.config.ts` in your project root with an example shortcut.
 
 ### 5. Configure Your Shortcuts
 
-Edit `shortcuts.config.ts` to define your app's shortcuts. See [Configuration](./configuration.md) for details.
+Edit `intents.config.ts` to define your app's shortcuts. See [Configuration](./configuration.md) for details.
 
 ### 6. Generate Swift App Intents
 
@@ -61,6 +63,7 @@ This creates `ios/<YourApp>/GeneratedAppIntents.swift` with Swift App Intent imp
 ### 7. Add Generated File to Xcode
 
 In Xcode:
+
 1. Right-click your app folder (e.g., `YourApp/`) in the project navigator
 2. Select "Add Files to..."
 3. Choose `GeneratedAppIntents.swift`
@@ -76,12 +79,25 @@ npx react-native run-ios
 
 That's it! Your shortcuts are now available to Siri.
 
+## Future: Automated Setup
+
+> The manual Xcode steps above should eventually be automated — zero manual Xcode configuration.
+
+**What would be automated:**
+
+- Widget Extension target creation
+- App Group entitlements on both targets
+- `Info.plist` flags (`NSSupportsLiveActivities`)
+- Linking generated Swift files to the correct targets
+
+**Approach:** A CLI command or build-time script that manipulates `.xcodeproj/project.pbxproj` directly.
+
 ## Custom App Group ID
 
 By default, the library uses `group.<bundle-identifier>`. To specify a custom App Group:
 
 ```typescript
-const config: ShortcutsConfig = {
+const config: IntentsConfig = {
   appGroupId: 'group.com.mycompany.myapp',
   shortcuts: [
     // ...

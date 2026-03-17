@@ -16,8 +16,6 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-  schedule:
-    - cron: '40 12 * * 0'
 
 jobs:
   analyze:
@@ -47,8 +45,9 @@ jobs:
           build-mode: none
         - language: ruby
           build-mode: none
-        - language: swift
-          build-mode: manual
+        # TODO: Re-enable Swift CodeQL when Swift codebase grows (currently ~54min build time for 1 file)
+        # - language: swift
+        #   build-mode: manual
         # CodeQL supports the following values keywords for 'language': 'actions', 'c-cpp', 'csharp', 'go', 'java-kotlin', 'javascript-typescript', 'python', 'ruby', 'rust', 'swift'
         # Use `c-cpp` to analyze code written in C, C++ or both
         # Use 'java-kotlin' to analyze code written in Java, Kotlin or both
@@ -88,6 +87,14 @@ jobs:
         npm ci
         cd example && npm install
         cd ios && pod install
+
+    - name: Generate shortcuts
+      if: matrix.language == 'swift'
+      run: |
+        cd example && npm run generate-shortcuts
+        mkdir -p ios/IosIntentsExample/en.lproj ios/IosIntentsExample/es.lproj
+        cp ios/IosIntentsExample/AppShortcuts.strings ios/IosIntentsExample/en.lproj/
+        cp ios/IosIntentsExample/AppShortcuts.strings ios/IosIntentsExample/es.lproj/
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL

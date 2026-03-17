@@ -7,8 +7,10 @@ const storage = createMMKV({
 // Keys
 const KEYS = {
   TIMER_RUNNING: 'timerRunning',
+  TIMER_PAUSED: 'timerPaused',
   TASK_NAME: 'taskName',
   TIMER_START_TIME: 'timerStartTime',
+  PAUSED_ELAPSED: 'pausedElapsed',
   LOGS: 'logs',
   TODOS: 'todos',
 } as const;
@@ -30,6 +32,28 @@ export const Storage = {
 
   setTimerRunning: (value: boolean) => {
     storage.set(KEYS.TIMER_RUNNING, value);
+  },
+
+  // Timer Paused
+  getTimerPaused: (): boolean => {
+    return storage.getBoolean(KEYS.TIMER_PAUSED) ?? false;
+  },
+
+  setTimerPaused: (value: boolean) => {
+    storage.set(KEYS.TIMER_PAUSED, value);
+  },
+
+  // Paused Elapsed (seconds)
+  getPausedElapsed: (): number => {
+    return storage.getNumber(KEYS.PAUSED_ELAPSED) ?? 0;
+  },
+
+  setPausedElapsed: (value: number) => {
+    storage.set(KEYS.PAUSED_ELAPSED, value);
+  },
+
+  clearPausedElapsed: () => {
+    storage.remove(KEYS.PAUSED_ELAPSED);
   },
 
   // Task Name

@@ -2,7 +2,8 @@
  * CLI utility functions for generate-shortcuts
  */
 
-import type { ShortcutsConfig } from '../types';
+import type { IntentsConfig } from '../types';
+import { collectAllButtonIntents } from './liveactivity-codegen';
 
 /**
  * Converts a string to PascalCase
@@ -64,7 +65,7 @@ export function generateSwiftCondition(
  * Extracts all localizable strings from the config
  */
 export function extractLocalizableStrings(
-  config: ShortcutsConfig
+  config: IntentsConfig
 ): Record<string, string> {
   const strings: Record<string, string> = {};
 
@@ -104,7 +105,7 @@ export function extractLocalizableStrings(
 /**
  * Extracts all App Shortcuts phrases for AppShortcuts.strings
  */
-export function extractAppShortcutsPhrases(config: ShortcutsConfig): string[] {
+export function extractAppShortcutsPhrases(config: IntentsConfig): string[] {
   const phrases: string[] = [];
 
   config.shortcuts.forEach((shortcut) => {
@@ -287,9 +288,9 @@ export function mergeAppShortcutsStrings(
  * //   | { identifier: 'addTask'; parameters: { taskName: string }; ... }
  * //   | { identifier: 'startTimer'; parameters?: never; ... }
  */
-export function generateTypeScriptTypes(config: ShortcutsConfig): string {
+export function generateTypeScriptTypes(config: IntentsConfig): string {
   const imports = `// AUTO-GENERATED - DO NOT EDIT
-// Generated from shortcuts.config.ts
+// Generated from intents.config.ts
 // Run 'npx react-native-ios-intents generate' to regenerate
 
 // This file augments react-native-ios-intents types with your shortcuts
@@ -332,7 +333,7 @@ ${paramFields}
 
   // Generate standalone types that can be directly imported
   const typeDefinition = `/**
- * Type-safe shortcut invocation
+ * Type-safe shortcut invocation (Siri shortcuts only)
  * Provides autocomplete and type checking for shortcut identifiers and parameters
  *
  * Usage in your code:
@@ -359,7 +360,27 @@ export type ShortcutListener = (
 ) => void | Promise<void>;
 `;
 
-  return imports + typeDefinition;
+  // Generate separate LiveActivityButtonAction type for LA button events
+  const buttonIntents = collectAllButtonIntents(config.liveActivities || []);
+  let buttonTypeDefinition = '';
+  if (buttonIntents.size > 0) {
+    const buttonTypes = Array.from(buttonIntents).map((id) => {
+      return `  | { identifier: '${id}'; nonce: string; }`;
+    });
+
+    buttonTypeDefinition = `
+/**
+ * Type-safe Live Activity button action
+ * Use with LiveActivities.addEventListener('button', ...)
+ *
+ * These events are fire-and-forget — no respond callback.
+ */
+export type LiveActivityButtonAction =
+${buttonTypes.join('\n')};
+`;
+  }
+
+  return imports + typeDefinition + buttonTypeDefinition;
 }
 
 /**

@@ -2,7 +2,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import type { ShortcutsConfig } from '../types';
+import type { IntentsConfig } from '../types';
 import {
   extractLocalizableStrings,
   extractAppShortcutsPhrases,
@@ -11,6 +11,9 @@ import {
   generateTypeScriptTypes,
 } from './utils';
 import { generateSwiftFile } from './swift-codegen';
+import {
+  generateLiveActivitySwiftFile,
+} from './liveactivity-codegen';
 
 /**
  * Generates Swift AppIntent code from shortcuts.config.ts
@@ -130,10 +133,34 @@ async function main(): Promise<void> {
     if (isExampleMode) {
       const projectRoot = path.resolve(__dirname, '../..');
       const exampleRoot = path.resolve(projectRoot, 'example');
-      const tsConfig = path.resolve(exampleRoot, 'shortcuts.config.ts');
-      const jsConfig = path.resolve(exampleRoot, 'shortcuts.config.js');
 
-      if (fs.existsSync(tsConfig)) {
+      // Look for intents.config first, fall back to shortcuts.config (deprecated)
+      const tsConfigNew = path.resolve(exampleRoot, 'intents.config.ts');
+      const jsConfigNew = path.resolve(exampleRoot, 'intents.config.js');
+      const tsConfigLegacy = path.resolve(exampleRoot, 'shortcuts.config.ts');
+      const jsConfigLegacy = path.resolve(exampleRoot, 'shortcuts.config.js');
+
+      let useDeprecatedName = false;
+      let tsConfig: string | undefined;
+      let jsConfig: string | undefined;
+
+      if (fs.existsSync(tsConfigNew)) {
+        tsConfig = tsConfigNew;
+      } else if (fs.existsSync(jsConfigNew)) {
+        jsConfig = jsConfigNew;
+      } else if (fs.existsSync(tsConfigLegacy)) {
+        tsConfig = tsConfigLegacy;
+        useDeprecatedName = true;
+      } else if (fs.existsSync(jsConfigLegacy)) {
+        jsConfig = jsConfigLegacy;
+        useDeprecatedName = true;
+      }
+
+      if (useDeprecatedName) {
+        console.warn('⚠️  shortcuts.config.ts is deprecated — rename to intents.config.ts');
+      }
+
+      if (tsConfig) {
         try {
           const tsNodePath = path.resolve(projectRoot, 'node_modules/ts-node/register');
           require(tsNodePath);
@@ -143,10 +170,10 @@ async function main(): Promise<void> {
           console.error('   Error:', (err as Error).message);
           process.exit(1);
         }
-      } else if (fs.existsSync(jsConfig)) {
+      } else if (jsConfig) {
         configPath = jsConfig;
       } else {
-        console.error('❌ No shortcuts.config.ts found in example/');
+        console.error('❌ No intents.config.ts found in example/');
         process.exit(1);
       }
 
@@ -158,24 +185,54 @@ async function main(): Promise<void> {
     } else if (isLibrary) {
       // Library mode: for library development without --example
       const projectRoot = path.resolve(__dirname, '../..');
-      configPath = path.resolve(projectRoot, 'lib/module/shortcuts.config.js');
-      outputDir = path.resolve(projectRoot, 'ios');
+      const newConfigPath = path.resolve(projectRoot, 'lib/module/intents.config.js');
+      const legacyConfigPath = path.resolve(projectRoot, 'lib/module/shortcuts.config.js');
 
-      if (!fs.existsSync(configPath)) {
-        console.error('❌ shortcuts.config.js not found in lib/module/');
-        console.error('   Expected at:', configPath);
+      if (fs.existsSync(newConfigPath)) {
+        configPath = newConfigPath;
+      } else if (fs.existsSync(legacyConfigPath)) {
+        configPath = legacyConfigPath;
+        console.warn('⚠️  shortcuts.config.js is deprecated — rename to intents.config.js');
+      } else {
+        console.error('❌ intents.config.js not found in lib/module/');
+        console.error('   Expected at:', newConfigPath);
         console.error('   Make sure to run "bob build" first');
         process.exit(1);
       }
+      outputDir = path.resolve(projectRoot, 'ios');
     } else {
       const appRoot = process.cwd();
-      const tsConfig = path.resolve(appRoot, 'shortcuts.config.ts');
-      const jsConfig = path.resolve(appRoot, 'shortcuts.config.js');
 
-      if (fs.existsSync(tsConfig)) {
+      // Look for intents.config first, fall back to shortcuts.config (deprecated)
+      const tsConfigNew = path.resolve(appRoot, 'intents.config.ts');
+      const jsConfigNew = path.resolve(appRoot, 'intents.config.js');
+      const tsConfigLegacy = path.resolve(appRoot, 'shortcuts.config.ts');
+      const jsConfigLegacy = path.resolve(appRoot, 'shortcuts.config.js');
+
+      let foundConfig: string | undefined;
+      let isLegacy = false;
+
+      if (fs.existsSync(tsConfigNew)) {
         try {
           require('ts-node/register');
-          configPath = tsConfig;
+          foundConfig = tsConfigNew;
+        } catch {
+          console.error('\n❌ Found intents.config.ts but ts-node is not installed\n');
+          console.error('Choose one option:\n');
+          console.error('Option 1: Install ts-node (keep TypeScript config)');
+          console.error('  npm install --save-dev ts-node typescript\n');
+          console.error('Option 2: Use JavaScript config instead');
+          console.error('  mv intents.config.ts intents.config.js');
+          console.error('  (You\'ll still get TypeScript autocomplete in your app!)\n');
+          process.exit(1);
+        }
+      } else if (fs.existsSync(jsConfigNew)) {
+        foundConfig = jsConfigNew;
+      } else if (fs.existsSync(tsConfigLegacy)) {
+        isLegacy = true;
+        try {
+          require('ts-node/register');
+          foundConfig = tsConfigLegacy;
         } catch {
           console.error('\n❌ Found shortcuts.config.ts but ts-node is not installed\n');
           console.error('Choose one option:\n');
@@ -186,20 +243,30 @@ async function main(): Promise<void> {
           console.error('  (You\'ll still get TypeScript autocomplete in your app!)\n');
           process.exit(1);
         }
-      } else if (fs.existsSync(jsConfig)) {
-        configPath = jsConfig;
-      } else {
-        console.log('📝 No shortcuts.config.ts found, creating template...');
+      } else if (fs.existsSync(jsConfigLegacy)) {
+        isLegacy = true;
+        foundConfig = jsConfigLegacy;
+      }
 
-        const template = `import type { ShortcutsConfig } from 'react-native-ios-intents';
+      if (isLegacy && foundConfig) {
+        console.warn('⚠️  shortcuts.config.ts is deprecated — rename to intents.config.ts');
+      }
+
+      if (foundConfig) {
+        configPath = foundConfig;
+      } else {
+        console.log('📝 No intents.config.ts found, creating template...');
+
+        const templatePath = tsConfigNew;
+        const template = `import type { IntentsConfig } from 'react-native-ios-intents';
 
         /**
-         * Siri Shortcuts Configuration
+         * Intents Configuration
          *
-         * Define your app's shortcuts here. After editing this file, run:
+         * Define your app's Siri shortcuts and Live Activities here. After editing this file, run:
          * npx react-native-ios-intents generate
          */
-        const config: ShortcutsConfig = {
+        const config: IntentsConfig = {
         shortcuts: [
             {
             identifier: 'exampleAction',
@@ -220,11 +287,11 @@ async function main(): Promise<void> {
         export default config;
         `;
 
-        fs.writeFileSync(tsConfig, template, 'utf8');
-        console.log('✅ Created template: shortcuts.config.ts');
+        fs.writeFileSync(templatePath, template, 'utf8');
+        console.log('✅ Created template: intents.config.ts');
         console.log('');
         console.log('📝 Next steps:');
-        console.log('   1. Edit shortcuts.config.ts to define your shortcuts');
+        console.log('   1. Edit intents.config.ts to define your shortcuts');
         console.log('   2. Run: npx react-native-ios-intents generate');
         console.log('');
         process.exit(0);
@@ -236,7 +303,7 @@ async function main(): Promise<void> {
       );
     }
 
-    let config: ShortcutsConfig;
+    let config: IntentsConfig;
     try {
       const loaded = require(configPath);
       config = loaded.default || loaded;
@@ -343,6 +410,101 @@ async function main(): Promise<void> {
 
     fs.writeFileSync(typesOutputPath, typesContent, 'utf8');
     console.log('✅ Generated:', typesOutputPath);
+
+    // Generate Live Activity Swift code if config has liveActivities
+    if (config.liveActivities && config.liveActivities.length > 0) {
+      console.log('🔴 Generating Live Activity code...');
+      console.log(`✅ Found ${config.liveActivities.length} Live Activities`);
+
+      const liveActivitySwift = generateLiveActivitySwiftFile(config);
+      const liveActivityPath = path.resolve(outputDir, 'GeneratedLiveActivity.swift');
+      fs.writeFileSync(liveActivityPath, liveActivitySwift, 'utf8');
+      console.log('✅ Generated:', liveActivityPath);
+
+      // Auto-copy to Widget Extension target if configured
+      if (config.widgetExtensionTarget) {
+        const iosDir = path.resolve(outputDir, '..');
+        const widgetDir = path.resolve(iosDir, config.widgetExtensionTarget);
+        if (fs.existsSync(widgetDir)) {
+          const widgetPath = path.resolve(widgetDir, 'GeneratedLiveActivity.swift');
+          fs.writeFileSync(widgetPath, liveActivitySwift, 'utf8');
+          console.log('✅ Also copied to Widget Extension:', widgetPath);
+        } else {
+          console.warn(`⚠️  Widget Extension directory not found: ${widgetDir}`);
+          console.warn(`   Create it first, then re-run the generator.`);
+        }
+      }
+
+      // Collect button intents to inform user about dual-target setup
+      const hasButtons = (config.liveActivities ?? []).some((def) => {
+        const checkNode = (node: any): boolean => {
+          if (node.type === 'button' && node.shortcutIdentifier) return true;
+          if (node.children) return node.children.some(checkNode);
+          return false;
+        };
+        if (checkNode(def.lockScreenLayout)) return true;
+        if (def.dynamicIslandCompact) {
+          if (checkNode(def.dynamicIslandCompact.leading)) return true;
+          if (checkNode(def.dynamicIslandCompact.trailing)) return true;
+        }
+        if (def.dynamicIslandExpanded) {
+          for (const region of ['leading', 'trailing', 'center', 'bottom'] as const) {
+            const node = def.dynamicIslandExpanded[region];
+            if (node && checkNode(node)) return true;
+          }
+        }
+        return false;
+      });
+
+      const generateBundle = config.liveActivityWidgetBundle !== false;
+
+      console.log('');
+      console.log('📝 Live Activity Widget Extension setup:');
+      if (generateBundle) {
+        console.log('   1. Add a Widget Extension target in Xcode (File → New → Target → Widget Extension)');
+        if (config.widgetExtensionTarget) {
+          console.log('   2. GeneratedLiveActivity.swift has been auto-copied to your Widget Extension target');
+        } else {
+          console.log('   2. Copy GeneratedLiveActivity.swift to your Widget Extension target directory');
+          console.log('      💡 Set widgetExtensionTarget in your config to automate this step');
+        }
+        console.log('   3. Add App Group entitlement matching main app');
+        console.log('   4. Add NSSupportsLiveActivities = YES to Info.plist');
+        if (hasButtons) {
+          console.log('');
+          console.log('   🎛️ Interactive buttons detected:');
+          console.log('      GeneratedAppIntents.swift includes LA_* LiveActivityIntent stubs (main app target)');
+          console.log('      GeneratedLiveActivity.swift includes matching stubs (Widget Extension target)');
+        }
+        console.log('');
+        console.log('   💡 Already have a Widget Extension? Set liveActivityWidgetBundle: false');
+        console.log('      in your config and add LiveActivityWidget to your existing WidgetBundle.');
+      } else {
+        console.log('   ⚠️  liveActivityWidgetBundle: false — no @main WidgetBundle generated.');
+        console.log('   Add LiveActivityWidget to your existing WidgetBundle:');
+        console.log('');
+        console.log('   // @main struct YourWidgetBundle: WidgetBundle {');
+        console.log('   //     var body: some Widget {');
+        console.log('   //         LiveActivityWidget()');
+        console.log('   //     }');
+        console.log('   // }');
+        console.log('');
+        if (config.widgetExtensionTarget) {
+          console.log('   1. GeneratedLiveActivity.swift has been auto-copied to your Widget Extension target');
+        } else {
+          console.log('   1. Copy GeneratedLiveActivity.swift to your Widget Extension target directory');
+          console.log('      💡 Set widgetExtensionTarget in your config to automate this step');
+        }
+        console.log('   2. Add LiveActivityWidget to your existing WidgetBundle');
+        console.log('   3. Add NSSupportsLiveActivities = YES to Info.plist');
+        if (hasButtons) {
+          console.log('');
+          console.log('   🎛️ Interactive buttons detected:');
+          console.log('      GeneratedAppIntents.swift includes LA_* LiveActivityIntent stubs (main app target)');
+          console.log('      GeneratedLiveActivity.swift includes matching stubs (Widget Extension target)');
+        }
+      }
+    }
 
     console.log('');
     console.log('📝 Shortcuts generated:');
