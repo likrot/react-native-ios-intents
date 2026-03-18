@@ -106,6 +106,7 @@ example/ios/IosIntentsExample/*.strings
 
 # Local Xcode config
 DevelopmentTeam.xcconfig
+example/ios/DevelopmentTeam.xcconfig
 
 # tests
 coverage/

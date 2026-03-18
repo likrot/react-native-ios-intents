@@ -5,6 +5,9 @@ commit-msg:
 
 pre-commit:
   commands:
+    strip-dev-team:
+      glob: "*.pbxproj"
+      run: sed -i '' 's/DEVELOPMENT_TEAM = [A-Z0-9]*;/DEVELOPMENT_TEAM = "";/' {staged_files} && git add {staged_files}
     typecheck:
       run: npm run typecheck
     format-fix:

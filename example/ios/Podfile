@@ -33,5 +33,21 @@ target 'IosIntentsExample' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+
+    # Read DEVELOPMENT_TEAM from local xcconfig and apply to all targets
+    dev_team_xcconfig = File.join(__dir__, 'DevelopmentTeam.xcconfig')
+    if File.exist?(dev_team_xcconfig)
+      team_id = File.read(dev_team_xcconfig).match(/DEVELOPMENT_TEAM\s*=\s*(\S+)/)&.[](1)
+      if team_id
+        installer.aggregate_targets.each do |target|
+          target.user_project.native_targets.each do |native_target|
+            native_target.build_configurations.each do |build_config|
+              build_config.build_settings['DEVELOPMENT_TEAM'] = team_id
+            end
+          end
+          target.user_project.save
+        end
+      end
+    end
   end
 end
