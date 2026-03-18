@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { Text, View, StyleSheet, Button, ScrollView, Switch } from 'react-native';
-import { SiriShortcuts } from 'react-native-ios-intents';
+import { SiriShortcuts, LiveActivities } from 'react-native-ios-intents';
 import { Storage, type Todo } from './storage';
 import { TodoModal } from './TodoModal';
 import type { ShortcutInvocation } from './shortcuts.generated';
@@ -12,17 +12,28 @@ export default function App() {
   const [timerStartTime, setTimerStartTime] = useState<number | null>(() => Storage.getTimerStartTime());
   const taskName = Storage.getTaskName();
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [timerPaused, setTimerPaused] = useState(() => Storage.getTimerPaused());
   const [logsExpanded, setLogsExpanded] = useState(false);
   const [silentMode, setSilentMode] = useState(false);
   const silentModeRef = useRef(silentMode);
   const timerRunningRef = useRef(timerRunning);
   const [todos, setTodos] = useState<Todo[]>(() => Storage.getTodos());
   const [modalVisible, setModalVisible] = useState(false);
+  const [liveActivityId, setLiveActivityId] = useState<string | null>(null);
+  const liveActivityIdRef = useRef<string | null>(null);
+  const timerStartTimeRef = useRef<number | null>(timerStartTime);
+  const pausedElapsedRef = useRef<number>(0);
+  if(pausedElapsedRef.current === 0){
+    pausedElapsedRef.current = Storage.getPausedElapsed() || 0;
+  }
 
-  // Keep ref in sync with state
+  // Keep refs in sync with state
   useEffect(() => {
     timerRunningRef.current = timerRunning;
   }, [timerRunning]);
+  useEffect(() => {
+    timerStartTimeRef.current = timerStartTime;
+  }, [timerStartTime]);
 
   useEffect(() => {
     addLog('✅ Siri Shortcuts initialized');
@@ -31,6 +42,34 @@ export default function App() {
 
     // Sync initial state for confirmations (including taskName for interpolation)
     SiriShortcuts.updateAppState({ timerRunning: timerRunningRef.current, taskName });
+    // Restore Live Activity if timer was running or paused before app restart
+    const wasPaused = Storage.getTimerPaused();
+    if (timerRunningRef.current || wasPaused) {
+      // End any stale activities of this type from before the kill
+      const running = LiveActivities.getRunningActivities();
+      running
+        .filter((a) => a.activityType === 'timerActivity')
+        .forEach((a) => {
+          LiveActivities.endActivity(a.activityId, a.activityType);
+          addLog(`🧹 Ended stale Live Activity: ${a.activityId.substring(0, 8)}...`);
+        });
+
+      const timerStartDate = timerStartTimeRef.current ? new Date(timerStartTimeRef.current) : new Date();
+      const savedElapsed = pausedElapsedRef.current;
+
+      const actId = LiveActivities.startActivity(
+        'timerActivity',
+        { taskName },
+        wasPaused
+          ? { timerStart: timerStartDate, isRunning: false, elapsedDisplay: formatTime(savedElapsed) }
+          : { timerStart: timerStartDate, isRunning: true, elapsedDisplay: '' }
+      );
+      if (actId) {
+        setLiveActivityId(actId);
+        liveActivityIdRef.current = actId;
+        addLog(`🔴 Live Activity restored${wasPaused ? ' (paused)' : ''}: ${actId.substring(0, 8)}...`);
+      }
+    }
     addLog(`📊 Synced state: timerRunning = ${timerRunningRef.current}, taskName = "${taskName}"`);
 
     // Listen for Siri shortcut invocations with type-safe autocomplete
@@ -120,13 +159,26 @@ export default function App() {
       }
     });
 
+    // Listen for Live Activity button taps (fire-and-forget, no respond callback)
+    const buttonSub = LiveActivities.addEventListener('button', (action) => {
+      addLog(`🎛️ LA button tapped: ${action.identifier}`);
+      if (action.identifier === 'pauseTimer') {
+        handlePauseTimer();
+        addLog('⏸️ Timer paused via Live Activity');
+      } else if (action.identifier === 'resumeTimer') {
+        handleResumeTimer();
+        addLog('▶️ Timer resumed via Live Activity');
+      }
+    });
+
     // Cleanup on unmount
     return () => {
       subscription.remove();
+      buttonSub.remove();
     };
   }, [taskName]); // Removed timerRunning - using ref instead to avoid stale closures
 
-  // Timer interval effect
+  // Timer display update (local UI only - Live Activity timer is system-rendered)
   useEffect(() => {
     if (timerRunning && timerStartTime) {
       // Calculate elapsed time from start time state
@@ -160,7 +212,10 @@ export default function App() {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
   };
 
   const handleStartTimer = (fromSiri = false) => {
@@ -168,24 +223,98 @@ export default function App() {
       addLog('🚀 Started timer');
     }
     const startTime = Date.now();
+    setTimerPaused(false);
+    pausedElapsedRef.current = 0;
     setTimerRunning(true);
     setTimerStartTime(startTime);
     Storage.setTimerRunning(true);
+    Storage.setTimerPaused(false);
+    Storage.clearPausedElapsed();
     Storage.setTimerStartTime(startTime);
     // Sync state for Siri confirmations (including taskName for dynamic messages)
     SiriShortcuts.updateAppState({ timerRunning: true, taskName });
+
+    // Start Live Activity with system-rendered timer (no polling needed)
+    const timerStartDate = new Date(startTime);
+    const actId = LiveActivities.startActivity(
+      'timerActivity',
+      { taskName },
+      { timerStart: timerStartDate, isRunning: true, elapsedDisplay: '' }
+    );
+    if (actId) {
+      setLiveActivityId(actId);
+      liveActivityIdRef.current = actId;
+      addLog(`🔴 Live Activity started: ${actId.substring(0, 8)}...`);
+    }
+  };
+
+  const handlePauseTimer = () => {
+    const startTime = timerStartTimeRef.current;
+    const elapsed = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
+    pausedElapsedRef.current = elapsed;
+    setTimerPaused(true);
+    setTimerRunning(false);
+    Storage.setTimerRunning(false);
+    Storage.setTimerPaused(true);
+    Storage.setPausedElapsed(elapsed);
+    SiriShortcuts.updateAppState({ timerRunning: false, taskName });
+
+    const display = formatTime(elapsed);
+
+    if (liveActivityIdRef.current) {
+      LiveActivities.updateActivity(
+        liveActivityIdRef.current,
+        'timerActivity',
+        { timerStart: startTime ? new Date(startTime) : new Date(), isRunning: false, elapsedDisplay: display }
+      );
+    }
+
+    addLog(`⏸️ Timer paused at ${display}`);
+  };
+
+  const handleResumeTimer = () => {
+    const newStartTime = Date.now() - (pausedElapsedRef.current * 1000);
+    setTimerPaused(false);
+    setTimerRunning(true);
+    setTimerStartTime(newStartTime);
+    Storage.setTimerRunning(true);
+    Storage.setTimerPaused(false);
+    Storage.setTimerStartTime(newStartTime);
+    SiriShortcuts.updateAppState({ timerRunning: true, taskName });
+
+    if (liveActivityIdRef.current) {
+      LiveActivities.updateActivity(
+        liveActivityIdRef.current,
+        'timerActivity',
+        { timerStart: new Date(newStartTime), isRunning: true, elapsedDisplay: '' }
+      );
+    }
+
+    addLog('▶️ Timer resumed');
   };
 
   const handleStopTimer = (fromSiri = false) => {
     if (!fromSiri) {
       addLog('🛑 Stopped timer');
     }
+    setTimerPaused(false);
+    pausedElapsedRef.current = 0;
     setTimerRunning(false);
     setTimerStartTime(null);
     Storage.setTimerRunning(false);
+    Storage.setTimerPaused(false);
+    Storage.clearPausedElapsed();
     Storage.clearTimerStartTime();
     // Sync state for Siri confirmations
     SiriShortcuts.updateAppState({ timerRunning: false, taskName });
+
+    // End Live Activity
+    if (liveActivityIdRef.current) {
+      LiveActivities.endActivity(liveActivityIdRef.current, 'timerActivity');
+      addLog('🔴 Live Activity ended');
+      setLiveActivityId(null);
+      liveActivityIdRef.current = null;
+    }
   };
 
   const handleClearLogs = () => {
@@ -205,30 +334,45 @@ export default function App() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Siri Shortcuts Example</Text>
         <Text style={styles.subtitle}>
-          Status: {timerRunning ? '⏱️ Running' : '⏸️ Stopped'}
+          Status: {timerRunning ? '⏱️ Running' : timerPaused ? '⏸️ Paused' : '⏹️ Stopped'}
+          {liveActivityId ? ' | 🔴 Live' : ''}
         </Text>
-        {timerRunning && (
+        {(timerRunning || timerPaused) && (
           <Text style={styles.timer}>
-            {formatTime(elapsedSeconds)}
+            {timerPaused ? formatTime(pausedElapsedRef.current) : formatTime(elapsedSeconds)}
           </Text>
         )}
       </View>
 
       <View style={styles.controls}>
-        <Button
-          title="Start Timer"
-          onPress={() => handleStartTimer()}
-          disabled={timerRunning}
-        />
+        {timerPaused ? (
+          <Button
+            title="Resume"
+            onPress={handleResumeTimer}
+          />
+        ) : (
+          <Button
+            title="Start Timer"
+            onPress={() => handleStartTimer()}
+            disabled={timerRunning}
+          />
+        )}
         <View style={styles.spacer} />
+        {timerRunning && (
+          <Button
+            title="Pause"
+            onPress={handlePauseTimer}
+          />
+        )}
+        {timerRunning && <View style={styles.spacer} />}
         <Button
           title="Stop Timer"
           onPress={() => handleStopTimer()}
-          disabled={!timerRunning}
+          disabled={!timerRunning && !timerPaused}
         />
       </View>
 
@@ -264,7 +408,10 @@ export default function App() {
           ✨ Siri will respond with custom feedback!{'\n'}
           🚀 Works even when app is killed.{'\n'}
           💾 State persists across app restarts.{'\n'}
-          📝 Siri will ask for task name when adding todos!
+          📝 Siri will ask for task name when adding todos!{'\n'}
+          🔴 Timer shows as Live Activity on Lock Screen!{'\n'}
+          ⏱️ Timer counts natively — no polling needed!{'\n'}
+          🎛️ Tap buttons on Lock Screen to pause/resume!
         </Text>
       </View>
 
@@ -284,7 +431,7 @@ export default function App() {
             />
           </View>
         </View>
-        <ScrollView style={styles.logScroll}>
+        <ScrollView style={styles.logScroll} nestedScrollEnabled>
           {logs.length === 0 && (
             <Text style={styles.logTextEmpty}>
               Tap a button or use Siri to see events...
@@ -305,7 +452,7 @@ export default function App() {
         onToggleTodo={handleToggleTodo}
         onDeleteTodo={handleDeleteTodo}
       />
-    </View>
+    </ScrollView>
   );
 }
 
@@ -432,7 +579,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   logScroll: {
-    flex: 1,
+    maxHeight: 250,
   },
   logText: {
     fontSize: 12,

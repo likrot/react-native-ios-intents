@@ -11,7 +11,7 @@ program
 
 program
   .command('generate')
-  .description('Generate Swift AppIntents from shortcuts.config.ts')
+  .description('Generate Swift AppIntents from intents.config.ts')
   .action(() => {
     console.log('Generating App Intents...\n');
     try {

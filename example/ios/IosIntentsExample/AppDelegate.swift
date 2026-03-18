@@ -23,7 +23,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     window = UIWindow(frame: UIScreen.main.bounds)
 
-    // TODO: if this is something that is required probably need to add to the Readme for consumers
     factory.startReactNative(
       withModuleName: "IosIntentsExample",
       in: window,

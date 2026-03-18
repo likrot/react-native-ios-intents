@@ -80,8 +80,8 @@ lib/
 
 # Compiled CLI
 scripts/cli/
-scripts/types.js
-scripts/types.d.ts
+scripts/*types.js
+scripts/*types.d.ts
 
 # React Native Codegen
 ios/generated
@@ -93,11 +93,19 @@ nitrogen/
 # Generated Swift files
 example/ios/IosIntentsExample/GeneratedAppIntents.swift
 ios/GeneratedAppIntents.swift
+example/ios/IosIntentsExample/GeneratedLiveActivity.swift
+example/ios/IosIntentsExample/GeneratedLiveActivityModule.swift
+example/ios/LiveActivityWidget/GeneratedLiveActivity.swift
+ios/GeneratedLiveActivity.swift
+ios/GeneratedLiveActivityModule.swift
 
 # Generated localization files
 example/ios/IosIntentsExample/*.xcstrings
 example/ios/IosIntentsExample/*.lproj/**
 example/ios/IosIntentsExample/*.strings
+
+# Local Xcode config
+DevelopmentTeam.xcconfig
 
 # tests
 coverage/

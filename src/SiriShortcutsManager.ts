@@ -1,6 +1,6 @@
-import { NitroModules } from 'react-native-nitro-modules';
 import { Platform } from 'react-native';
-import type { IosIntents as IIosIntents, NativeShortcutData } from './IosIntents.nitro';
+import type { NativeShortcutData } from './IosIntents.nitro';
+import { IosIntentsModule } from './NativeIosIntents';
 import type {
   ShortcutInvocation,
   ShortcutListener,
@@ -12,11 +12,6 @@ import { logger } from './Logger';
 
 // Event key constant to prevent typos
 const EVENT_SHORTCUT = 'shortcut' as const;
-
-// Get Nitro module instance
-const IosIntentsModule = Platform.OS === 'ios'
-  ? NitroModules.createHybridObject<IIosIntents>('IosIntents')
-  : null;
 
 /**
  * Internal listener type that accepts any shortcut shape
@@ -43,7 +38,7 @@ export class SiriShortcutsManager {
    * Gets native module if available (iOS only)
    * Returns the module for proper TypeScript type narrowing
    */
-  private getNativeModule(): IIosIntents | null {
+  private getNativeModule(): typeof IosIntentsModule {
     if (Platform.OS === 'ios' && IosIntentsModule !== null) {
       return IosIntentsModule;
     }
@@ -108,7 +103,7 @@ export class SiriShortcutsManager {
    * subscription.remove();
    * ```
    */
-  addEventListener<T extends { identifier: string; nonce: string; parameters?: any; userConfirmed?: boolean } = ShortcutInvocation>(
+  addEventListener<T extends { identifier: string; nonce: string; parameters?: Record<string, unknown>; userConfirmed?: boolean } = ShortcutInvocation>(
     event: 'shortcut',
     listener: (shortcut: T, respond: RespondCallback) => void | Promise<void>
   ): { remove: () => void } {
@@ -209,41 +204,37 @@ export class SiriShortcutsManager {
       return;
     }
 
-    try {
-      logger.debug('Updating app state:', state);
+    logger.debug('Updating app state:', state);
 
-      Object.entries(state).forEach(([key, value]) => {
-        const stateKey = `appState_${key}`;
+    Object.entries(state).forEach(([key, value]) => {
+      const stateKey = `appState_${key}`;
 
-        // Track the key for cleanup
-        this.trackedStateKeys.add(key);
+      // Track the key for cleanup
+      this.trackedStateKeys.add(key);
 
-        if (typeof value === 'boolean') {
-          // Store booleans as numbers (0 or 1)
-          module.setSharedNumber(stateKey, value ? 1 : 0);
-        } else if (typeof value === 'number') {
-          module.setSharedNumber(stateKey, value);
-        } else if (typeof value === 'string') {
-          module.setSharedString(stateKey, value);
-        } else if (value === null || value === undefined) {
-          // Clear the key
-          module.setSharedString(stateKey, null);
-        } else {
-          // Serialize complex values as JSON string
-          // This is appropriate for small objects/arrays that Swift can parse with JSONDecoder
-          // Limitations: circular references will fail, keep objects small for UserDefaults
-          try {
-            module.setSharedString(stateKey, JSON.stringify(value));
-          } catch (serializeError) {
-            logger.warn(`Cannot serialize value for key "${key}":`, serializeError);
-          }
+      if (typeof value === 'boolean') {
+        // Store booleans as numbers (0 or 1)
+        module.setSharedNumber(stateKey, value ? 1 : 0);
+      } else if (typeof value === 'number') {
+        module.setSharedNumber(stateKey, value);
+      } else if (typeof value === 'string') {
+        module.setSharedString(stateKey, value);
+      } else if (value === null || value === undefined) {
+        // Clear the key
+        module.setSharedString(stateKey, null);
+      } else {
+        // Serialize complex values as JSON string
+        // This is appropriate for small objects/arrays that Swift can parse with JSONDecoder
+        // Limitations: circular references will fail, keep objects small for UserDefaults
+        try {
+          module.setSharedString(stateKey, JSON.stringify(value));
+        } catch (serializeError) {
+          logger.warn(`Cannot serialize value for key "${key}":`, serializeError);
         }
-      });
+      }
+    });
 
-      logger.info('App state updated successfully');
-    } catch (error) {
-      logger.error('Error updating app state:', error);
-    }
+    logger.info('App state updated successfully');
   }
 
   // Private methods

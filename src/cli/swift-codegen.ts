@@ -5,13 +5,14 @@
  * These functions build AppIntent structs, state-based dialogs, and the complete Swift file.
  */
 
-import type { ShortcutsConfig, ShortcutDefinition, StateDialog, ShortcutParameter } from '../types';
+import type { IntentsConfig, ShortcutDefinition, StateDialog, ShortcutParameter } from '../types';
 import {
   pascalCase,
   escapeForSwift,
   extractVariables,
   generateSwiftCondition,
 } from './utils';
+import { generateLiveActivityIntentsForApp } from './liveactivity-codegen';
 
 /**
  * Generates Swift code to interpolate variables into a message
@@ -528,9 +529,11 @@ ${parameterWrites}
         print("[${className}] Command written to shared UserDefaults")
 
         // Post Darwin notification to wake up main app (cross-process notification)
+        // Notification name includes bundle ID to prevent interference between apps
+        let bundleId = Bundle.main.bundleIdentifier ?? "unknown"
         CFNotificationCenterPostNotification(
             CFNotificationCenterGetDarwinNotifyCenter(),
-            CFNotificationName("eu.eblank.likrot.iosintents.shortcut" as CFString),
+            CFNotificationName("eu.eblank.likrot.iosintents.\\(bundleId).shortcut" as CFString),
             nil, nil, true
         )
 
@@ -645,7 +648,7 @@ export function generateAppShortcut(
  * @returns Complete Swift source code as a string
  */
 export function generateSwiftFile(
-  config: ShortcutsConfig,
+  config: IntentsConfig,
   useLocalization: boolean
 ): string {
   const intents = config.shortcuts
@@ -657,11 +660,13 @@ export function generateSwiftFile(
     .map((s) => generateAppShortcut(s, useLocalization))
     .join('\n');
 
+  const liveActivityIntents = generateLiveActivityIntentsForApp(config);
+
   return `//
 // GeneratedAppIntents.swift
 //
 // AUTO-GENERATED - DO NOT EDIT
-// Generated from shortcuts.config.ts
+// Generated from intents.config.ts
 // Run 'npx react-native-ios-intents generate' to regenerate
 //
 
@@ -691,5 +696,6 @@ struct GeneratedAppShortcutsProvider: AppShortcutsProvider {
 ${appShortcuts}
     }
 }
+${liveActivityIntents ? `\n${liveActivityIntents}\n` : ''}
 `;
 }

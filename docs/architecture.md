@@ -5,7 +5,7 @@
 The library generates static Swift App Intents from your TypeScript configuration:
 
 ```
-Developer: shortcuts.config.ts → CLI generates Swift file
+Developer: intents.config.ts → CLI generates Swift file
                                           ↓
                          GeneratedAppIntents.swift (in your app)
                                           ↓
@@ -21,7 +21,7 @@ User: "Hey Siri, start timer in [App]" → App Intent executes
 
 ## Key Components
 
-### shortcuts.config.ts
+### intents.config.ts
 
 TypeScript configuration defining your shortcuts. This is the source of truth.
 
@@ -43,7 +43,7 @@ React Native writes responses to shared UserDefaults, which Swift polls for and 
 
 ## How It Works
 
-1. **TypeScript Config**: Define shortcuts in `shortcuts.config.ts`
+1. **TypeScript Config**: Define shortcuts in `intents.config.ts`
 2. **Code Generation**: CLI generates Swift App Intents from config
 3. **Build Time**: Xcode compiles generated Swift code into your app
 4. **Runtime**: iOS registers shortcuts immediately on app install
@@ -98,3 +98,16 @@ if defaults.double(forKey: "appState_timerRunning") == 1 {
 ```
 
 This allows App Intents to make decisions based on current app state without needing to launch the full app.
+
+### Future: IPC Alternatives
+
+> **Status:** Low priority — current approach works fine.
+
+Darwin notifications could be replaced with **UserDefaults KVO** (Key-Value Observing):
+
+- Cross-process KVO on shared `UserDefaults(suiteName:)` works since iOS 9.3
+- The UserDefaults write itself becomes the signal — no explicit notification posting needed
+- Would eliminate ~35 lines of `CFNotificationCenter` C-bridging code from `ios/IosIntents.swift`
+- Would remove Darwin notification posting from generated Swift (in `swift-codegen.ts` and `liveactivity-codegen.ts`)
+- Same capabilities and limitations as Darwin — neither wakes killed apps (that's handled by `openAppWhenRun` / `LiveActivityIntent` protocol)
+- **Risk:** Cross-process KVO ordering is not guaranteed; mitigated by writing the trigger key last

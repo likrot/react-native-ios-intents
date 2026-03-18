@@ -5,12 +5,14 @@
   },
   "android": {
     "androidNamespace": ["iosintents"],
-    "androidCxxLibName": "iosintents"
+    "androidCxxLibName": "IosIntents"
   },
   "autolinking": {
     "IosIntents": {
-      "swift": "IosIntents",
-      "kotlin": "IosIntents"
+      "swift": "IosIntents"
+    },
+    "LiveActivityModule": {
+      "swift": "LiveActivityModule"
     }
   },
   "ignorePaths": ["node_modules", "example"]
