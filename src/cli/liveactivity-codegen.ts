@@ -15,6 +15,7 @@ import type {
 } from '../liveactivity-types';
 import type { IntentsConfig } from '../types';
 import { pascalCase, escapeForSwift } from './utils';
+import { loadTemplate, fillTemplate } from './template-loader';
 
 /**
  * Returns a string of spaces for the given indentation level (4 spaces per level)
@@ -589,35 +590,13 @@ export function collectAllButtonIntents(defs: LiveActivityDefinition[]): Set<str
  * @param appGroupConstant - The Swift constant name for the App Group ID
  */
 function generateSingleIntent(id: string, appGroupConstant: string): string {
-  const intentName = `LA_${pascalCase(id)}Intent`;
-  return `@available(iOS 16.2, *)
-struct ${intentName}: LiveActivityIntent {
-    static var title: LocalizedStringResource = "${pascalCase(id)}"
-
-    func perform() async throws -> some IntentResult {
-        guard let defaults = UserDefaults(suiteName: ${appGroupConstant}) else {
-            return .result()
-        }
-
-        let nonce = UUID().uuidString
-        defaults.set("${id}", forKey: "IosIntentsPendingCommand")
-        defaults.set(nonce, forKey: "IosIntentsCommandNonce")
-        defaults.set(Date().timeIntervalSince1970, forKey: "IosIntentsCommandTimestamp")
-        defaults.set("liveActivity", forKey: "IosIntentsSource")
-
-        // Notification name includes bundle ID to prevent interference between apps.
-        // LiveActivityIntent.perform() runs in the main app's process, so Bundle.main
-        // is always the main app.
-        let bundleId = Bundle.main.bundleIdentifier ?? "unknown"
-        CFNotificationCenterPostNotification(
-            CFNotificationCenterGetDarwinNotifyCenter(),
-            CFNotificationName("eu.eblank.likrot.iosintents.\\(bundleId).shortcut" as CFString),
-            nil, nil, true
-        )
-
-        return .result()
-    }
-}`;
+  const template = loadTemplate('LiveActivityIntent.swift.template');
+  return fillTemplate(template, {
+    INTENT_NAME: `LA_${pascalCase(id)}Intent`,
+    TITLE: pascalCase(id),
+    APP_GROUP_CONSTANT: appGroupConstant,
+    COMMAND_ID: id,
+  });
 }
 
 /**
@@ -691,90 +670,14 @@ ${stubs}`;
  * Generates the @main WidgetBundle that registers the Live Activity widget
  */
 export function generateWidgetBundle(): string {
-  return `@available(iOS 16.2, *)
-@main
-struct GeneratedLiveActivityBundle: WidgetBundle {
-    var body: some Widget {
-        LiveActivityWidget()
-    }
-}`;
+  return loadTemplate('WidgetBundle.swift.template');
 }
 
 /**
  * Generates the duplicated CodableValue + GenericActivityAttributes for Widget Extension
  */
 function generateGenericAttributesForWidget(): string {
-  return `// MARK: - Generic Activity Attributes
-// Duplicated from ios/GenericActivityAttributes.swift so Widget Extension is self-contained.
-// Keep in sync: both must have the same enum cases and accessor names.
-
-@available(iOS 16.2, *)
-enum CodableValue: Codable, Hashable {
-    case string(String)
-    case double(Double)
-    case bool(Bool)
-    // Date values are stored as Unix timestamps (Double)
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-
-        if let boolValue = try? container.decode(Bool.self) {
-            self = .bool(boolValue)
-        } else if let doubleValue = try? container.decode(Double.self) {
-            self = .double(doubleValue)
-        } else if let stringValue = try? container.decode(String.self) {
-            self = .string(stringValue)
-        } else {
-            throw DecodingError.typeMismatch(
-                CodableValue.self,
-                DecodingError.Context(
-                    codingPath: decoder.codingPath,
-                    debugDescription: "Unsupported CodableValue type"
-                )
-            )
-        }
-    }
-
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        switch self {
-        case .string(let value):
-            try container.encode(value)
-        case .double(let value):
-            try container.encode(value)
-        case .bool(let value):
-            try container.encode(value)
-        }
-    }
-
-    var stringValue: String? {
-        if case .string(let v) = self { return v }
-        return nil
-    }
-
-    var doubleValue: Double? {
-        if case .double(let v) = self { return v }
-        return nil
-    }
-
-    var boolValue: Bool? {
-        if case .bool(let v) = self { return v }
-        return nil
-    }
-}
-
-@available(iOS 16.2, *)
-struct GenericActivityAttributes: ActivityAttributes {
-    var data: [String: CodableValue]
-
-    struct ContentState: Codable, Hashable {
-        var data: [String: CodableValue]
-
-        func value(_ key: String) -> CodableValue? {
-            return data[key]
-        }
-    }
-}`;
+  return loadTemplate('CodableValue.swift.template');
 }
 
 /**
@@ -820,27 +723,12 @@ ${bundle}`;
 ${intentStubs}`;
   }
 
-  return `//
-// GeneratedLiveActivity.swift
-//
-// AUTO-GENERATED - DO NOT EDIT
-// Generated from intents.config.ts
-// Run 'npx react-native-ios-intents generate' to regenerate
-//
-
-import ActivityKit
-import AppIntents
-import SwiftUI
-import WidgetKit
-
-${genericAttributes}${intentSection}
-
-// MARK: - Activity Views
-
-${views}
-
-// MARK: - Live Activity Widget
-
-${widget}${bundleSection}
-`;
+  const template = loadTemplate('GeneratedLiveActivity.swift.template');
+  return fillTemplate(template, {
+    GENERIC_ATTRIBUTES: genericAttributes,
+    INTENT_SECTION: intentSection,
+    ACTIVITY_VIEWS: views,
+    ACTIVITY_WIDGET: widget,
+    BUNDLE_SECTION: bundleSection,
+  });
 }

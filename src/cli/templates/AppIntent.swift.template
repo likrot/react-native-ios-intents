@@ -1,0 +1,75 @@
+
+@available(iOS 16.0, *)
+struct {{CLASS_NAME}}: AppIntent {
+    static var title: LocalizedStringResource = {{TITLE_VALUE}}
+    {{DESCRIPTION_VALUE}}
+    static var openAppWhenRun: Bool { true }
+{{PARAMETER_DECLARATIONS}}{{INITIALIZERS}}
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        print("[{{CLASS_NAME}}] Performing shortcut: {{SHORTCUT_ID}}")
+
+        // App Intents run in a separate process with sandbox restrictions.
+        // Inter-process communication happens via UserDefaults with App Groups
+        // (configured via App Capabilities in Xcode: group.<bundle-id>).
+        // This allows data exchange between the App Intent extension and React Native app.
+        guard let defaults = UserDefaults(suiteName: APP_GROUP_ID) else {
+            print("[{{CLASS_NAME}}] ERROR: Failed to access App Group")
+            return .result(dialog: IntentDialog(stringLiteral: {{ERROR_MESSAGE}}))
+        }
+{{PARAMETER_REQUESTS}}{{DIALOG_CODE}}
+        let nonce = UUID().uuidString
+{{PARAMETER_WRITES}}
+        defaults.set("{{SHORTCUT_ID}}", forKey: "IosIntentsPendingCommand")
+        defaults.set(nonce, forKey: "IosIntentsCommandNonce")
+        defaults.set(Date().timeIntervalSince1970, forKey: "IosIntentsCommandTimestamp"){{USER_CONFIRMED_WRITE}}
+
+        print("[{{CLASS_NAME}}] Command written to shared UserDefaults")
+
+        // Post Darwin notification to wake up main app (cross-process notification)
+        // Notification name includes bundle ID to prevent interference between apps
+        let bundleId = Bundle.main.bundleIdentifier ?? "unknown"
+        CFNotificationCenterPostNotification(
+            CFNotificationCenterGetDarwinNotifyCenter(),
+            CFNotificationName("eu.eblank.likrot.iosintents.\(bundleId).shortcut" as CFString),
+            nil, nil, true
+        )
+
+        print("[{{CLASS_NAME}}] Darwin notification posted")
+
+        // Poll UserDefaults for response from React Native (with timeout)
+        // This is necessary because App Intents and React Native run in separate processes.
+        // The nonce ensures we don't receive stale responses from previous executions.
+        // Note: \(nonce) is Swift string interpolation syntax in the generated code (not JS)
+        let responseKey = "IosIntentsResponse_\(nonce)"
+        let timeout: TimeInterval = 5.0      // 5 second timeout (balance between UX and resource usage)
+        let pollInterval: TimeInterval = 0.1  // Check every 100ms (frequent but not CPU-intensive)
+        let startTime = Date()
+
+        print("[{{CLASS_NAME}}] Waiting for response...")
+
+        while Date().timeIntervalSince(startTime) < timeout {
+            // Check for response with this specific nonce
+            if let responseMessage = defaults.string(forKey: responseKey) {
+                print("[{{CLASS_NAME}}] Received response: \(responseMessage)")
+
+                // Clean up to prevent memory leaks and duplicate processing
+                defaults.removeObject(forKey: responseKey)
+
+                // Return result with dialog
+                // NOTE: When responseMessage is empty (""), Siri typically speaks a default
+                // response like "Done" or "OK". This is observed iOS behavior - Apple's
+                // documentation does not specify what happens with empty IntentDialog strings.
+                // See: https://developer.apple.com/forums/thread/124730
+                return .result(dialog: IntentDialog(stringLiteral: responseMessage))
+            }
+
+            // Non-blocking sleep to reduce CPU usage while polling
+            try? await Task.sleep(nanoseconds: UInt64(pollInterval * 1_000_000_000))
+        }
+
+        print("[{{CLASS_NAME}}] Timeout waiting for response")
+
+        // Timeout reached - this could indicate app crashed, handler error, or slow response
+        return .result(dialog: IntentDialog(stringLiteral: {{TIMEOUT_MESSAGE}}))
+    }
+}

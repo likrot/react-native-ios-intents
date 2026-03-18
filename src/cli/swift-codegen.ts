@@ -13,6 +13,7 @@ import {
   generateSwiftCondition,
 } from './utils';
 import { generateLiveActivityIntentsForApp } from './liveactivity-codegen';
+import { loadTemplate, fillTemplate } from './template-loader';
 
 /**
  * Generates Swift code to interpolate variables into a message
@@ -496,86 +497,25 @@ export function generateIntentStruct(
     ? `String(localized: "system.timeout", defaultValue: "Done")`
     : `"Done"`;
 
-  return `
-@available(iOS 16.0, *)
-struct ${className}: AppIntent {
-    static var title: LocalizedStringResource = ${titleValue}
-    ${descriptionValue}
-    static var openAppWhenRun: Bool { true }
-${parameterDeclarations}${initializers}
-    func perform() async throws -> some IntentResult & ProvidesDialog {
-        print("[${className}] Performing shortcut: ${shortcut.identifier}")
+  const userConfirmedWrite = hasConfirmationDialogs
+    ? `\n        defaults.set(userConfirmedOverride, forKey: "IosIntentsUserConfirmed")`
+    : '';
 
-        // App Intents run in a separate process with sandbox restrictions.
-        // Inter-process communication happens via UserDefaults with App Groups
-        // (configured via App Capabilities in Xcode: group.<bundle-id>).
-        // This allows data exchange between the App Intent extension and React Native app.
-        guard let defaults = UserDefaults(suiteName: APP_GROUP_ID) else {
-            print("[${className}] ERROR: Failed to access App Group")
-            return .result(dialog: IntentDialog(stringLiteral: ${errorMessage}))
-        }
-${parameterRequests}${dialogCode}
-        let nonce = UUID().uuidString
-${parameterWrites}
-        defaults.set("${shortcut.identifier}", forKey: "IosIntentsPendingCommand")
-        defaults.set(nonce, forKey: "IosIntentsCommandNonce")
-        defaults.set(Date().timeIntervalSince1970, forKey: "IosIntentsCommandTimestamp")${
-          hasConfirmationDialogs
-            ? `
-        defaults.set(userConfirmedOverride, forKey: "IosIntentsUserConfirmed")`
-            : ''
-        }
-
-        print("[${className}] Command written to shared UserDefaults")
-
-        // Post Darwin notification to wake up main app (cross-process notification)
-        // Notification name includes bundle ID to prevent interference between apps
-        let bundleId = Bundle.main.bundleIdentifier ?? "unknown"
-        CFNotificationCenterPostNotification(
-            CFNotificationCenterGetDarwinNotifyCenter(),
-            CFNotificationName("eu.eblank.likrot.iosintents.\\(bundleId).shortcut" as CFString),
-            nil, nil, true
-        )
-
-        print("[${className}] Darwin notification posted")
-
-        // Poll UserDefaults for response from React Native (with timeout)
-        // This is necessary because App Intents and React Native run in separate processes.
-        // The nonce ensures we don't receive stale responses from previous executions.
-        // Note: \\(nonce) is Swift string interpolation syntax in the generated code (not JS)
-        let responseKey = "IosIntentsResponse_\\(nonce)"
-        let timeout: TimeInterval = 5.0      // 5 second timeout (balance between UX and resource usage)
-        let pollInterval: TimeInterval = 0.1  // Check every 100ms (frequent but not CPU-intensive)
-        let startTime = Date()
-
-        print("[${className}] Waiting for response...")
-
-        while Date().timeIntervalSince(startTime) < timeout {
-            // Check for response with this specific nonce
-            if let responseMessage = defaults.string(forKey: responseKey) {
-                print("[${className}] Received response: \\(responseMessage)")
-
-                // Clean up to prevent memory leaks and duplicate processing
-                defaults.removeObject(forKey: responseKey)
-
-                // Return result with dialog
-                // NOTE: When responseMessage is empty (""), Siri typically speaks a default
-                // response like "Done" or "OK". This is observed iOS behavior - Apple's
-                // documentation does not specify what happens with empty IntentDialog strings.
-                // See: https://developer.apple.com/forums/thread/124730
-                return .result(dialog: IntentDialog(stringLiteral: responseMessage))
-            }
-
-            // Non-blocking sleep to reduce CPU usage while polling
-            try? await Task.sleep(nanoseconds: UInt64(pollInterval * 1_000_000_000))
-        }
-
-        print("[${className}] Timeout waiting for response")
-
-        // Timeout reached - this could indicate app crashed, handler error, or slow response
-        return .result(dialog: IntentDialog(stringLiteral: ${timeoutMessage}))
-    }
-}`;
+  const template = loadTemplate('AppIntent.swift.template');
+  return fillTemplate(template, {
+    CLASS_NAME: className,
+    TITLE_VALUE: titleValue,
+    DESCRIPTION_VALUE: descriptionValue,
+    PARAMETER_DECLARATIONS: parameterDeclarations,
+    INITIALIZERS: initializers,
+    SHORTCUT_ID: shortcut.identifier,
+    ERROR_MESSAGE: errorMessage,
+    PARAMETER_REQUESTS: parameterRequests,
+    DIALOG_CODE: dialogCode,
+    PARAMETER_WRITES: parameterWrites,
+    USER_CONFIRMED_WRITE: userConfirmedWrite,
+    TIMEOUT_MESSAGE: timeoutMessage,
+  });
 }
 
 /**
@@ -662,40 +602,22 @@ export function generateSwiftFile(
 
   const liveActivityIntents = generateLiveActivityIntentsForApp(config);
 
-  return `//
-// GeneratedAppIntents.swift
-//
-// AUTO-GENERATED - DO NOT EDIT
-// Generated from intents.config.ts
-// Run 'npx react-native-ios-intents generate' to regenerate
-//
-
-import Foundation
-import AppIntents
-
-// App Group for inter-process communication
-// App Intents run in a separate process, so we use UserDefaults with App Group
-// The App Group ID should be configured in your app's capabilities:
-// Format: group.<bundle-identifier>
-${
-  config.appGroupId
+  const appGroupIdBlock = config.appGroupId
     ? `private let APP_GROUP_ID = "${config.appGroupId}"`
     : `private var APP_GROUP_ID: String {
     guard let bundleId = Bundle.main.bundleIdentifier else {
         fatalError("Cannot determine bundle identifier")
     }
     return "group.\\(bundleId)"
-}`
-}
+}`;
 
-${intents}
+  const liveActivitySection = liveActivityIntents ? `\n${liveActivityIntents}\n` : '';
 
-@available(iOS 16.0, *)
-struct GeneratedAppShortcutsProvider: AppShortcutsProvider {
-    static var appShortcuts: [AppShortcut] {
-${appShortcuts}
-    }
-}
-${liveActivityIntents ? `\n${liveActivityIntents}\n` : ''}
-`;
+  const template = loadTemplate('GeneratedAppIntents.swift.template');
+  return fillTemplate(template, {
+    APP_GROUP_ID_BLOCK: appGroupIdBlock,
+    INTENT_STRUCTS: intents,
+    APP_SHORTCUTS: appShortcuts,
+    LIVE_ACTIVITY_INTENTS_SECTION: liveActivitySection,
+  });
 }

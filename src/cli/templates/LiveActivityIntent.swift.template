@@ -1,0 +1,28 @@
+@available(iOS 16.2, *)
+struct {{INTENT_NAME}}: LiveActivityIntent {
+    static var title: LocalizedStringResource = "{{TITLE}}"
+
+    func perform() async throws -> some IntentResult {
+        guard let defaults = UserDefaults(suiteName: {{APP_GROUP_CONSTANT}}) else {
+            return .result()
+        }
+
+        let nonce = UUID().uuidString
+        defaults.set("{{COMMAND_ID}}", forKey: "IosIntentsPendingCommand")
+        defaults.set(nonce, forKey: "IosIntentsCommandNonce")
+        defaults.set(Date().timeIntervalSince1970, forKey: "IosIntentsCommandTimestamp")
+        defaults.set("liveActivity", forKey: "IosIntentsSource")
+
+        // Notification name includes bundle ID to prevent interference between apps.
+        // LiveActivityIntent.perform() runs in the main app's process, so Bundle.main
+        // is always the main app.
+        let bundleId = Bundle.main.bundleIdentifier ?? "unknown"
+        CFNotificationCenterPostNotification(
+            CFNotificationCenterGetDarwinNotifyCenter(),
+            CFNotificationName("eu.eblank.likrot.iosintents.\(bundleId).shortcut" as CFString),
+            nil, nil, true
+        )
+
+        return .result()
+    }
+}
