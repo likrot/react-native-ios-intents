@@ -104,5 +104,8 @@ example/ios/IosIntentsExample/*.xcstrings
 example/ios/IosIntentsExample/*.lproj/**
 example/ios/IosIntentsExample/*.strings
 
+# Local Xcode config
+DevelopmentTeam.xcconfig
+
 # tests
 coverage/

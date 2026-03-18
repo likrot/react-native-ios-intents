@@ -429,6 +429,20 @@ async function main(): Promise<void> {
           const widgetPath = path.resolve(widgetDir, 'GeneratedLiveActivity.swift');
           fs.writeFileSync(widgetPath, liveActivitySwift, 'utf8');
           console.log('✅ Also copied to Widget Extension:', widgetPath);
+
+          // Clean up Xcode-generated boilerplate that conflicts with our generated code
+          const boilerplateFiles = [
+            `${config.widgetExtensionTarget}.swift`,
+            `${config.widgetExtensionTarget}Bundle.swift`,
+            `${config.widgetExtensionTarget}LiveActivity.swift`,
+          ];
+          for (const file of boilerplateFiles) {
+            const filePath = path.resolve(widgetDir, file);
+            if (fs.existsSync(filePath)) {
+              fs.unlinkSync(filePath);
+              console.log('🗑️  Removed Xcode boilerplate:', file);
+            }
+          }
         } else {
           console.warn(`⚠️  Widget Extension directory not found: ${widgetDir}`);
           console.warn(`   Create it first, then re-run the generator.`);
