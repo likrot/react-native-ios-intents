@@ -1,0 +1,22 @@
+//
+// GeneratedLiveActivity.swift
+//
+// AUTO-GENERATED - DO NOT EDIT
+// Generated from intents.config.ts
+// Run 'npx react-native-ios-intents generate' to regenerate
+//
+
+import ActivityKit
+import AppIntents
+import SwiftUI
+import WidgetKit
+
+{{GENERIC_ATTRIBUTES}}{{INTENT_SECTION}}
+
+// MARK: - Activity Views
+
+{{ACTIVITY_VIEWS}}
+
+// MARK: - Live Activity Widget
+
+{{ACTIVITY_WIDGET}}{{BUNDLE_SECTION}}

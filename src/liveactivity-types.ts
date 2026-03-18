@@ -42,7 +42,16 @@ export type LayoutAlignment = 'leading' | 'trailing' | 'center';
  */
 export interface LayoutNode {
   /** The SwiftUI view type */
-  type: 'text' | 'image' | 'spacer' | 'hstack' | 'vstack' | 'zstack' | 'progress' | 'timer' | 'button';
+  type:
+    | 'text'
+    | 'image'
+    | 'spacer'
+    | 'hstack'
+    | 'vstack'
+    | 'zstack'
+    | 'progress'
+    | 'timer'
+    | 'button';
   /** For text: display string, supports ${field} interpolation */
   value?: string;
   /** For image: SF Symbol name */

@@ -195,7 +195,9 @@ export function mergeStringCatalog(
       }
     } catch (error) {
       // If parsing fails, start fresh (logged by caller)
-      console.warn('⚠️  Failed to parse existing String Catalog, creating new one');
+      console.warn(
+        '⚠️  Failed to parse existing String Catalog, creating new one'
+      );
     }
   }
 
@@ -254,7 +256,9 @@ export function mergeAppShortcutsStrings(
     const lines = existingContent.split('\n');
     lines.forEach((line) => {
       // Match: "key" = "value"; where key and value can contain escaped quotes
-      const match = line.match(/^"((?:[^"\\]|\\.)*)"\s*=\s*"((?:[^"\\]|\\.)*)";/);
+      const match = line.match(
+        /^"((?:[^"\\]|\\.)*)"\s*=\s*"((?:[^"\\]|\\.)*)";/
+      );
       if (match) {
         // Preserve the line as-is (including translation if different from key)
         phrases.add(line);
@@ -300,11 +304,9 @@ export function generateTypeScriptTypes(config: IntentsConfig): string {
 
   // Generate individual shortcut invocation types
   const shortcutTypes = config.shortcuts.map((shortcut) => {
-    const hasParameters = shortcut.parameters && shortcut.parameters.length > 0;
-
-    if (hasParameters) {
+    if (shortcut.parameters && shortcut.parameters.length > 0) {
       // Generate parameters object type
-      const paramFields = shortcut.parameters!
+      const paramFields = shortcut.parameters
         .map((param) => {
           const tsType = mapParameterTypeToTS(param.type);
           const optional = param.optional !== false ? '?' : '';

@@ -37,7 +37,8 @@ import { NitroModules } from 'react-native-nitro-modules';
 // Get reference to the mocked methods
 const mockCreateHybridObject = NitroModules.createHybridObject as jest.Mock;
 const mockNitroModule = mockCreateHybridObject.mock.results[0]?.value;
-const mockSetShortcutCallback = mockNitroModule?.setShortcutCallback as jest.Mock;
+const mockSetShortcutCallback =
+  mockNitroModule?.setShortcutCallback as jest.Mock;
 const mockSetSharedNumber = mockNitroModule?.setSharedNumber as jest.Mock;
 const mockSetSharedString = mockNitroModule?.setSharedString as jest.Mock;
 
@@ -99,8 +100,14 @@ describe('SiriShortcutsManager', () => {
     it('should clear specified app state keys', () => {
       SiriShortcuts.cleanup(['timerRunning', 'taskName']);
 
-      expect(mockSetSharedString).toHaveBeenCalledWith('appState_timerRunning', null);
-      expect(mockSetSharedString).toHaveBeenCalledWith('appState_taskName', null);
+      expect(mockSetSharedString).toHaveBeenCalledWith(
+        'appState_timerRunning',
+        null
+      );
+      expect(mockSetSharedString).toHaveBeenCalledWith(
+        'appState_taskName',
+        null
+      );
     });
 
     it('should clear all tracked state keys when none specified', () => {
@@ -111,8 +118,14 @@ describe('SiriShortcutsManager', () => {
       // Cleanup without args should clear all tracked keys
       SiriShortcuts.cleanup();
 
-      expect(mockSetSharedString).toHaveBeenCalledWith('appState_timerRunning', null);
-      expect(mockSetSharedString).toHaveBeenCalledWith('appState_taskName', null);
+      expect(mockSetSharedString).toHaveBeenCalledWith(
+        'appState_timerRunning',
+        null
+      );
+      expect(mockSetSharedString).toHaveBeenCalledWith(
+        'appState_taskName',
+        null
+      );
     });
 
     it('should not clear state if no keys were tracked', () => {
@@ -138,7 +151,10 @@ describe('SiriShortcutsManager', () => {
       SiriShortcuts.cleanup();
 
       expect(mockSetSharedString).toHaveBeenCalledWith('appState_newKey', null);
-      expect(mockSetSharedString).not.toHaveBeenCalledWith('appState_oldKey', null);
+      expect(mockSetSharedString).not.toHaveBeenCalledWith(
+        'appState_oldKey',
+        null
+      );
     });
   });
 
@@ -190,8 +206,14 @@ describe('SiriShortcutsManager', () => {
         nonce: 'test-nonce',
         parameters: {},
       };
-      expect(listener).toHaveBeenCalledWith(expectedShortcut, expect.any(Function));
-      expect(logger.info).toHaveBeenCalledWith('Shortcut invoked:', 'startTimer');
+      expect(listener).toHaveBeenCalledWith(
+        expectedShortcut,
+        expect.any(Function)
+      );
+      expect(logger.info).toHaveBeenCalledWith(
+        'Shortcut invoked:',
+        'startTimer'
+      );
     });
 
     it('should call all registered listeners', () => {
@@ -215,9 +237,18 @@ describe('SiriShortcutsManager', () => {
         nonce: 'test-nonce',
         parameters: {},
       };
-      expect(listener1).toHaveBeenCalledWith(expectedShortcut, expect.any(Function));
-      expect(listener2).toHaveBeenCalledWith(expectedShortcut, expect.any(Function));
-      expect(listener3).toHaveBeenCalledWith(expectedShortcut, expect.any(Function));
+      expect(listener1).toHaveBeenCalledWith(
+        expectedShortcut,
+        expect.any(Function)
+      );
+      expect(listener2).toHaveBeenCalledWith(
+        expectedShortcut,
+        expect.any(Function)
+      );
+      expect(listener3).toHaveBeenCalledWith(
+        expectedShortcut,
+        expect.any(Function)
+      );
     });
 
     it('should handle shortcuts with identifier and nonce', () => {
@@ -236,7 +267,10 @@ describe('SiriShortcutsManager', () => {
         nonce: 'test-nonce',
         parameters: {},
       };
-      expect(listener).toHaveBeenCalledWith(expectedShortcut, expect.any(Function));
+      expect(listener).toHaveBeenCalledWith(
+        expectedShortcut,
+        expect.any(Function)
+      );
     });
 
     it('should log warning if no listeners are registered', () => {
@@ -258,7 +292,9 @@ describe('SiriShortcutsManager', () => {
       jest.clearAllMocks();
       nativeCallback?.(nativeData);
 
-      expect(logger.warn).toHaveBeenCalledWith('Shortcut invoked but no listeners registered');
+      expect(logger.warn).toHaveBeenCalledWith(
+        'Shortcut invoked but no listeners registered'
+      );
     });
   });
 
@@ -377,7 +413,10 @@ describe('SiriShortcutsManager', () => {
         if (i % 2 === 0) {
           expect(listener).not.toHaveBeenCalled();
         } else {
-          expect(listener).toHaveBeenCalledWith(expectedShortcut, expect.any(Function));
+          expect(listener).toHaveBeenCalledWith(
+            expectedShortcut,
+            expect.any(Function)
+          );
         }
       });
     });
@@ -416,7 +455,10 @@ describe('SiriShortcutsManager', () => {
         nonce: 'test-nonce',
         parameters: {},
       };
-      expect(listener).toHaveBeenCalledWith(expectedShortcut, expect.any(Function));
+      expect(listener).toHaveBeenCalledWith(
+        expectedShortcut,
+        expect.any(Function)
+      );
     });
   });
 
@@ -470,40 +512,63 @@ describe('SiriShortcutsManager', () => {
     it('should store boolean true as number 1', () => {
       SiriShortcuts.updateAppState({ timerRunning: true });
 
-      expect(mockSetSharedNumber).toHaveBeenCalledWith('appState_timerRunning', 1);
-      expect(logger.info).toHaveBeenCalledWith('App state updated successfully');
+      expect(mockSetSharedNumber).toHaveBeenCalledWith(
+        'appState_timerRunning',
+        1
+      );
+      expect(logger.info).toHaveBeenCalledWith(
+        'App state updated successfully'
+      );
     });
 
     it('should store boolean false as number 0', () => {
       SiriShortcuts.updateAppState({ timerRunning: false });
 
-      expect(mockSetSharedNumber).toHaveBeenCalledWith('appState_timerRunning', 0);
+      expect(mockSetSharedNumber).toHaveBeenCalledWith(
+        'appState_timerRunning',
+        0
+      );
     });
 
     it('should store number values directly', () => {
       SiriShortcuts.updateAppState({ count: 42, elapsed: 3.14 });
 
       expect(mockSetSharedNumber).toHaveBeenCalledWith('appState_count', 42);
-      expect(mockSetSharedNumber).toHaveBeenCalledWith('appState_elapsed', 3.14);
+      expect(mockSetSharedNumber).toHaveBeenCalledWith(
+        'appState_elapsed',
+        3.14
+      );
     });
 
     it('should store string values directly', () => {
       SiriShortcuts.updateAppState({ taskName: 'Work', status: 'active' });
 
-      expect(mockSetSharedString).toHaveBeenCalledWith('appState_taskName', 'Work');
-      expect(mockSetSharedString).toHaveBeenCalledWith('appState_status', 'active');
+      expect(mockSetSharedString).toHaveBeenCalledWith(
+        'appState_taskName',
+        'Work'
+      );
+      expect(mockSetSharedString).toHaveBeenCalledWith(
+        'appState_status',
+        'active'
+      );
     });
 
     it('should clear keys with null values', () => {
       SiriShortcuts.updateAppState({ taskName: null });
 
-      expect(mockSetSharedString).toHaveBeenCalledWith('appState_taskName', null);
+      expect(mockSetSharedString).toHaveBeenCalledWith(
+        'appState_taskName',
+        null
+      );
     });
 
     it('should clear keys with undefined values', () => {
       SiriShortcuts.updateAppState({ taskName: undefined });
 
-      expect(mockSetSharedString).toHaveBeenCalledWith('appState_taskName', null);
+      expect(mockSetSharedString).toHaveBeenCalledWith(
+        'appState_taskName',
+        null
+      );
     });
 
     it('should serialize complex objects as JSON', () => {
@@ -523,8 +588,14 @@ describe('SiriShortcutsManager', () => {
         count: 5,
       });
 
-      expect(mockSetSharedNumber).toHaveBeenCalledWith('appState_timerRunning', 1);
-      expect(mockSetSharedString).toHaveBeenCalledWith('appState_taskName', 'Work');
+      expect(mockSetSharedNumber).toHaveBeenCalledWith(
+        'appState_timerRunning',
+        1
+      );
+      expect(mockSetSharedString).toHaveBeenCalledWith(
+        'appState_taskName',
+        'Work'
+      );
       expect(mockSetSharedNumber).toHaveBeenCalledWith('appState_count', 5);
     });
 
@@ -533,7 +604,9 @@ describe('SiriShortcutsManager', () => {
 
       SiriShortcuts.updateAppState({ test: true });
 
-      expect(logger.warn).toHaveBeenCalledWith('updateAppState: Not available on this platform');
+      expect(logger.warn).toHaveBeenCalledWith(
+        'updateAppState: Not available on this platform'
+      );
       expect(mockSetSharedNumber).not.toHaveBeenCalled();
     });
 

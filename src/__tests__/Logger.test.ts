@@ -62,7 +62,9 @@ describe('Logger', () => {
   describe('Default Console Logging', () => {
     it('should log debug messages with prefix', () => {
       logger.debug('test message');
-      expect(mockConsole.debug).toHaveBeenCalledWith('[IosIntents] test message');
+      expect(mockConsole.debug).toHaveBeenCalledWith(
+        '[IosIntents] test message'
+      );
     });
 
     it('should log info messages with prefix', () => {
@@ -72,32 +74,40 @@ describe('Logger', () => {
 
     it('should log warn messages with prefix', () => {
       logger.warn('test message');
-      expect(mockConsole.warn).toHaveBeenCalledWith('[IosIntents] test message');
+      expect(mockConsole.warn).toHaveBeenCalledWith(
+        '[IosIntents] test message'
+      );
     });
 
     it('should log error messages with prefix', () => {
       logger.error('test message');
-      expect(mockConsole.error).toHaveBeenCalledWith('[IosIntents] test message');
+      expect(mockConsole.error).toHaveBeenCalledWith(
+        '[IosIntents] test message'
+      );
     });
 
     it('should pass additional arguments to console', () => {
       const obj = { foo: 'bar' };
       const arr = [1, 2, 3];
-      
+
       logger.info('test', obj, arr);
-      expect(mockConsole.log).toHaveBeenCalledWith('[IosIntents] test', obj, arr);
+      expect(mockConsole.log).toHaveBeenCalledWith(
+        '[IosIntents] test',
+        obj,
+        arr
+      );
     });
   });
 
   describe('Enable/Disable Logging', () => {
     it('should not log when disabled', () => {
       logger.setEnabled(false);
-      
+
       logger.debug('debug');
       logger.info('info');
       logger.warn('warn');
       logger.error('error');
-      
+
       expect(mockConsole.debug).not.toHaveBeenCalled();
       expect(mockConsole.log).not.toHaveBeenCalled();
       expect(mockConsole.warn).not.toHaveBeenCalled();
@@ -108,7 +118,7 @@ describe('Logger', () => {
       logger.setEnabled(false);
       logger.info('should not log');
       expect(mockConsole.log).not.toHaveBeenCalled();
-      
+
       logger.setEnabled(true);
       logger.info('should log');
       expect(mockConsole.log).toHaveBeenCalledWith('[IosIntents] should log');
@@ -116,10 +126,10 @@ describe('Logger', () => {
 
     it('should return enabled state', () => {
       expect(logger.isEnabled()).toBe(true);
-      
+
       logger.setEnabled(false);
       expect(logger.isEnabled()).toBe(false);
-      
+
       logger.setEnabled(true);
       expect(logger.isEnabled()).toBe(true);
     });
@@ -129,25 +139,25 @@ describe('Logger', () => {
     it('should use custom prefix', () => {
       logger.setPrefix('[CustomApp]');
       logger.info('test message');
-      
+
       expect(mockConsole.log).toHaveBeenCalledWith('[CustomApp] test message');
     });
 
     it('should handle empty prefix', () => {
       logger.setPrefix('');
       logger.info('test message');
-      
+
       expect(mockConsole.log).toHaveBeenCalledWith(' test message');
     });
 
     it('should apply prefix to all log levels', () => {
       logger.setPrefix('[Test]');
-      
+
       logger.debug('debug');
       logger.info('info');
       logger.warn('warn');
       logger.error('error');
-      
+
       expect(mockConsole.debug).toHaveBeenCalledWith('[Test] debug');
       expect(mockConsole.log).toHaveBeenCalledWith('[Test] info');
       expect(mockConsole.warn).toHaveBeenCalledWith('[Test] warn');
@@ -163,19 +173,19 @@ describe('Logger', () => {
         warn: jest.fn(),
         error: jest.fn(),
       };
-      
+
       logger.setTransport(mockTransport);
-      
+
       logger.debug('debug', 1);
       logger.info('info', 2);
       logger.warn('warn', 3);
       logger.error('error', 4);
-      
+
       expect(mockTransport.debug).toHaveBeenCalledWith('[IosIntents] debug', 1);
       expect(mockTransport.info).toHaveBeenCalledWith('[IosIntents] info', 2);
       expect(mockTransport.warn).toHaveBeenCalledWith('[IosIntents] warn', 3);
       expect(mockTransport.error).toHaveBeenCalledWith('[IosIntents] error', 4);
-      
+
       // Console should not be called
       expect(mockConsole.debug).not.toHaveBeenCalled();
       expect(mockConsole.log).not.toHaveBeenCalled();
@@ -190,15 +200,15 @@ describe('Logger', () => {
         warn: jest.fn(),
         error: jest.fn(),
       };
-      
+
       logger.setTransport(mockTransport);
       logger.setEnabled(false);
-      
+
       logger.debug('debug');
       logger.info('info');
       logger.warn('warn');
       logger.error('error');
-      
+
       expect(mockTransport.debug).not.toHaveBeenCalled();
       expect(mockTransport.info).not.toHaveBeenCalled();
       expect(mockTransport.warn).not.toHaveBeenCalled();
@@ -212,12 +222,12 @@ describe('Logger', () => {
         warn: jest.fn(),
         error: jest.fn(),
       };
-      
+
       logger.setPrefix('[CustomPrefix]');
       logger.setTransport(mockTransport);
-      
+
       logger.info('test');
-      
+
       expect(mockTransport.info).toHaveBeenCalledWith('[CustomPrefix] test');
     });
   });
@@ -237,7 +247,7 @@ describe('Logger', () => {
       const obj = { key: 'value' };
       const num = 42;
       const bool = true;
-      
+
       logger.warn('mixed types:', obj, num, bool);
       expect(mockConsole.warn).toHaveBeenCalledWith(
         '[IosIntents] mixed types:',
@@ -250,7 +260,7 @@ describe('Logger', () => {
     it('should handle error objects', () => {
       const error = new Error('Test error');
       logger.error('An error occurred:', error);
-      
+
       expect(mockConsole.error).toHaveBeenCalledWith(
         '[IosIntents] An error occurred:',
         error
@@ -262,14 +272,14 @@ describe('Logger', () => {
     it('should maintain state across multiple operations', () => {
       logger.setPrefix('[App]');
       logger.setEnabled(true);
-      
+
       logger.info('first');
       expect(mockConsole.log).toHaveBeenCalledWith('[App] first');
-      
+
       logger.setEnabled(false);
       logger.info('second');
       expect(mockConsole.log).toHaveBeenCalledTimes(1);
-      
+
       logger.setEnabled(true);
       logger.info('third');
       expect(mockConsole.log).toHaveBeenCalledWith('[App] third');
@@ -283,13 +293,13 @@ describe('Logger', () => {
         warn: jest.fn(),
         error: jest.fn(),
       };
-      
+
       logger.setPrefix('[CustomApp]');
       logger.setTransport(mockTransport);
       logger.setEnabled(true);
-      
+
       logger.info('configured message', { data: 'test' });
-      
+
       expect(mockTransport.info).toHaveBeenCalledWith(
         '[CustomApp] configured message',
         { data: 'test' }
@@ -315,12 +325,16 @@ describe('Logger', () => {
     it('should handle very long messages', () => {
       const longMessage = 'a'.repeat(10000);
       logger.info(longMessage);
-      expect(mockConsole.log).toHaveBeenCalledWith(`[IosIntents] ${longMessage}`);
+      expect(mockConsole.log).toHaveBeenCalledWith(
+        `[IosIntents] ${longMessage}`
+      );
     });
 
     it('should handle special characters in messages', () => {
       logger.info('Special: 🚀 \n \t " \' \\');
-      expect(mockConsole.log).toHaveBeenCalledWith('[IosIntents] Special: 🚀 \n \t " \' \\');
+      expect(mockConsole.log).toHaveBeenCalledWith(
+        '[IosIntents] Special: 🚀 \n \t " \' \\'
+      );
     });
   });
 });

@@ -9,7 +9,11 @@ import {
   generateLiveActivitySwiftFile,
   generateLiveActivityIntentsForApp,
 } from '../liveactivity-codegen';
-import type { LiveActivityDefinition, LayoutNode, LiveActivityFieldDef } from '../../liveactivity-types';
+import type {
+  LiveActivityDefinition,
+  LayoutNode,
+  LiveActivityFieldDef,
+} from '../../liveactivity-types';
 import type { IntentsConfig } from '../../types';
 
 // Helper: create a minimal Live Activity definition
@@ -53,7 +57,11 @@ describe('Live Activity Code Generation', () => {
     };
 
     it('should return plain string for no interpolation', () => {
-      const result = resolveInterpolation('Hello World', attrFields, stateFields);
+      const result = resolveInterpolation(
+        'Hello World',
+        attrFields,
+        stateFields
+      );
       expect(result).toBe('"Hello World"');
     });
 
@@ -63,7 +71,9 @@ describe('Live Activity Code Generation', () => {
         attrFields,
         stateFields
       );
-      expect(result).toContain('context.attributes.data["taskName"]?.stringValue');
+      expect(result).toContain(
+        'context.attributes.data["taskName"]?.stringValue'
+      );
     });
 
     it('should resolve contentState fields with dictionary access', () => {
@@ -72,7 +82,9 @@ describe('Live Activity Code Generation', () => {
         attrFields,
         stateFields
       );
-      expect(result).toContain('context.state.data["elapsedSeconds"]?.doubleValue');
+      expect(result).toContain(
+        'context.state.data["elapsedSeconds"]?.doubleValue'
+      );
     });
 
     it('should handle single field reference (contentState)', () => {
@@ -81,7 +93,9 @@ describe('Live Activity Code Generation', () => {
         attrFields,
         stateFields
       );
-      expect(result).toContain('context.state.data["elapsedSeconds"]?.doubleValue');
+      expect(result).toContain(
+        'context.state.data["elapsedSeconds"]?.doubleValue'
+      );
     });
 
     it('should handle single field reference (attribute)', () => {
@@ -90,7 +104,9 @@ describe('Live Activity Code Generation', () => {
         attrFields,
         stateFields
       );
-      expect(result).toContain('context.attributes.data["taskName"]?.stringValue');
+      expect(result).toContain(
+        'context.attributes.data["taskName"]?.stringValue'
+      );
     });
 
     it('should leave unknown fields as literals', () => {
@@ -113,7 +129,11 @@ describe('Live Activity Code Generation', () => {
     });
 
     it('should escape special characters', () => {
-      const result = resolveInterpolation('Line 1\nLine 2', attrFields, stateFields);
+      const result = resolveInterpolation(
+        'Line 1\nLine 2',
+        attrFields,
+        stateFields
+      );
       expect(result).toContain('\\n');
     });
 
@@ -188,7 +208,9 @@ describe('Live Activity Code Generation', () => {
     it('should generate Text with dictionary-based interpolation', () => {
       const node: LayoutNode = { type: 'text', value: '${taskName}' };
       const result = generateLayoutSwiftUI(node, attrFields, stateFields);
-      expect(result).toContain('context.attributes.data["taskName"]?.stringValue');
+      expect(result).toContain(
+        'context.attributes.data["taskName"]?.stringValue'
+      );
     });
 
     it('should generate Image with systemName', () => {
@@ -216,7 +238,9 @@ describe('Live Activity Code Generation', () => {
         progressField: 'progress',
       };
       const result = generateLayoutSwiftUI(node, attrFields, stateFields);
-      expect(result).toContain('ProgressView(value: context.state.data["progress"]?.doubleValue ?? 0)');
+      expect(result).toContain(
+        'ProgressView(value: context.state.data["progress"]?.doubleValue ?? 0)'
+      );
     });
 
     it('should generate comment for invalid progress field', () => {
@@ -290,9 +314,7 @@ describe('Live Activity Code Generation', () => {
         children: [
           {
             type: 'vstack',
-            children: [
-              { type: 'text', value: 'Inner' },
-            ],
+            children: [{ type: 'text', value: 'Inner' }],
           },
         ],
       };
@@ -450,7 +472,9 @@ describe('Live Activity Code Generation', () => {
         isRunning: { type: 'boolean' },
       };
       const result = generateLayoutSwiftUI(node, attrFields, isRunningFields);
-      expect(result).toContain('if context.state.data["isRunning"]?.boolValue == true');
+      expect(result).toContain(
+        'if context.state.data["isRunning"]?.boolValue == true'
+      );
       expect(result).toContain('Button(intent: LA_StopTimerIntent())');
     });
 
@@ -464,7 +488,9 @@ describe('Live Activity Code Generation', () => {
         status: { type: 'string' },
       };
       const result = generateLayoutSwiftUI(node, attrFields, statusFields);
-      expect(result).toContain('if context.state.data["status"]?.stringValue == "active"');
+      expect(result).toContain(
+        'if context.state.data["status"]?.stringValue == "active"'
+      );
       expect(result).toContain('Text("Active")');
     });
 
@@ -478,7 +504,9 @@ describe('Live Activity Code Generation', () => {
         level: { type: 'number' },
       };
       const result = generateLayoutSwiftUI(node, attrFields, levelFields);
-      expect(result).toContain('if context.state.data["level"]?.doubleValue == 5');
+      expect(result).toContain(
+        'if context.state.data["level"]?.doubleValue == 5'
+      );
       expect(result).toContain('Text("Level 5")');
     });
 
@@ -498,7 +526,9 @@ describe('Live Activity Code Generation', () => {
 
     it('should use GenericActivityAttributes context', () => {
       const result = generateActivityView(createTimerDef());
-      expect(result).toContain('ActivityViewContext<GenericActivityAttributes>');
+      expect(result).toContain(
+        'ActivityViewContext<GenericActivityAttributes>'
+      );
     });
 
     it('should include Lock Screen layout with dictionary access', () => {
@@ -527,7 +557,9 @@ describe('Live Activity Code Generation', () => {
 
     it('should switch on _activityType', () => {
       const result = generateActivityWidget([createTimerDef()]);
-      expect(result).toContain('context.attributes.data["_activityType"]?.stringValue');
+      expect(result).toContain(
+        'context.attributes.data["_activityType"]?.stringValue'
+      );
       expect(result).toContain('case "timerActivity"');
     });
 
@@ -621,7 +653,9 @@ describe('Live Activity Code Generation', () => {
       expect(result).toContain('import SwiftUI');
       expect(result).toContain('import WidgetKit');
       // Should contain GenericActivityAttributes (duplicated for widget)
-      expect(result).toContain('struct GenericActivityAttributes: ActivityAttributes');
+      expect(result).toContain(
+        'struct GenericActivityAttributes: ActivityAttributes'
+      );
       expect(result).toContain('enum CodableValue: Codable, Hashable');
       // Should contain activity view and widget
       expect(result).toContain('struct TimerActivityView');
@@ -719,7 +753,9 @@ describe('Live Activity Code Generation', () => {
       };
       const result = generateLiveActivitySwiftFile(config);
       // Should use LiveActivityIntent (not plain AppIntent)
-      expect(result).toContain('struct LA_PauseTimerIntent: LiveActivityIntent');
+      expect(result).toContain(
+        'struct LA_PauseTimerIntent: LiveActivityIntent'
+      );
       expect(result).not.toContain('struct PauseTimerIntent: AppIntent');
       // Should NOT have openAppWhenRun (LiveActivityIntent handles this implicitly)
       expect(result).not.toContain('openAppWhenRun');
@@ -796,7 +832,9 @@ describe('Live Activity Code Generation', () => {
         ],
       };
       const result = generateLiveActivitySwiftFile(config);
-      expect(result).toContain('defaults.set("liveActivity", forKey: "IosIntentsSource")');
+      expect(result).toContain(
+        'defaults.set("liveActivity", forKey: "IosIntentsSource")'
+      );
     });
 
     it('should include IosIntentsSource in app target intents', () => {
@@ -813,7 +851,9 @@ describe('Live Activity Code Generation', () => {
         ],
       };
       const result = generateLiveActivityIntentsForApp(config);
-      expect(result).toContain('defaults.set("liveActivity", forKey: "IosIntentsSource")');
+      expect(result).toContain(
+        'defaults.set("liveActivity", forKey: "IosIntentsSource")'
+      );
     });
   });
 

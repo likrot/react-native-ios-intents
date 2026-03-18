@@ -30,8 +30,7 @@ export interface RunningActivityInfo {
  * This interface defines the low-level native operations for Live Activities.
  * High-level API is exposed through the LiveActivities class.
  */
-export interface LiveActivityModule
-  extends HybridObject<{ ios: 'swift' }> {
+export interface LiveActivityModule extends HybridObject<{ ios: 'swift' }> {
   /**
    * Start a Live Activity
    *

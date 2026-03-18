@@ -15,6 +15,7 @@ import type {
 } from '../liveactivity-types';
 import type { IntentsConfig } from '../types';
 import { pascalCase, escapeForSwift } from './utils';
+import { loadTemplate, fillTemplate } from './template-loader';
 
 /**
  * Returns a string of spaces for the given indentation level (4 spaces per level)
@@ -73,7 +74,12 @@ export function generateLayoutSwiftUI(
   contentStateFields: Record<string, LiveActivityFieldDef>,
   indentStr: string = indent(4)
 ): string {
-  const inner = generateLayoutSwiftUIInner(node, attributeFields, contentStateFields, indentStr);
+  const inner = generateLayoutSwiftUIInner(
+    node,
+    attributeFields,
+    contentStateFields,
+    indentStr
+  );
 
   // Wrap with showWhen conditional if specified
   if (node.showWhen) {
@@ -89,7 +95,10 @@ export function generateLayoutSwiftUI(
     }
 
     return `${indentStr}if ${comparison} {
-${inner.split('\n').map(line => '    ' + line).join('\n')}
+${inner
+  .split('\n')
+  .map((line) => '    ' + line)
+  .join('\n')}
 ${indentStr}}`;
   }
 
@@ -110,7 +119,12 @@ function generateLayoutSwiftUIInner(
       return `${indentStr}Spacer()`;
 
     case 'text':
-      return generateTextNode(node, attributeFields, contentStateFields, indentStr);
+      return generateTextNode(
+        node,
+        attributeFields,
+        contentStateFields,
+        indentStr
+      );
 
     case 'image':
       return generateImageNode(node, indentStr);
@@ -295,7 +309,12 @@ function generateStackNode(
 
   const children = (node.children || [])
     .map((child) =>
-      generateLayoutSwiftUI(child, attributeFields, contentStateFields, childIndent)
+      generateLayoutSwiftUI(
+        child,
+        attributeFields,
+        contentStateFields,
+        childIndent
+      )
     )
     .join('\n');
 
@@ -353,9 +372,7 @@ export function resolveInterpolation(
 /**
  * Generates a SwiftUI View struct for a single Live Activity type
  */
-export function generateActivityView(
-  def: LiveActivityDefinition
-): string {
+export function generateActivityView(def: LiveActivityDefinition): string {
   const viewName = `${pascalCase(def.identifier)}View`;
   const attributeFields = def.attributes;
   const contentStateFields = def.contentState;
@@ -384,15 +401,15 @@ ${lockScreenBody}
 /**
  * Generates the single LiveActivityWidget with switch dispatch for all activity types
  */
-export function generateActivityWidget(
-  defs: LiveActivityDefinition[]
-): string {
+export function generateActivityWidget(defs: LiveActivityDefinition[]): string {
   // Generate switch cases for lock screen
-  const lockScreenCases = defs.map((def) => {
-    const viewName = `${pascalCase(def.identifier)}View`;
-    return `${indent(4)}case "${def.identifier}":
+  const lockScreenCases = defs
+    .map((def) => {
+      const viewName = `${pascalCase(def.identifier)}View`;
+      return `${indent(4)}case "${def.identifier}":
 ${indent(5)}${viewName}(context: context)`;
-  }).join('\n');
+    })
+    .join('\n');
 
   // Generate Dynamic Island content for each activity type
   // For simplicity, use the first definition's dynamic island config or defaults
@@ -418,13 +435,17 @@ ${indent(1)}}
 /**
  * Generates Dynamic Island content with switch dispatch
  */
-function generateDynamicIslandContent(
-  defs: LiveActivityDefinition[]
-): string {
+function generateDynamicIslandContent(defs: LiveActivityDefinition[]): string {
   // Build per-activity expanded regions
   const expandedCases = generateDynamicIslandExpandedCases(defs);
-  const compactLeadingCases = generateDynamicIslandCompactCases(defs, 'leading');
-  const compactTrailingCases = generateDynamicIslandCompactCases(defs, 'trailing');
+  const compactLeadingCases = generateDynamicIslandCompactCases(
+    defs,
+    'leading'
+  );
+  const compactTrailingCases = generateDynamicIslandCompactCases(
+    defs,
+    'trailing'
+  );
 
   return `${indent(3)}let type = context.attributes.data["_activityType"]?.stringValue ?? ""
 ${indent(3)}return DynamicIsland {
@@ -452,10 +473,18 @@ ${indent(3)}}`;
 /**
  * Generates switch-based Dynamic Island expanded region content
  */
-function generateDynamicIslandExpandedCases(
-  defs: LiveActivityDefinition[]
-): { leading: string; trailing: string; center: string; bottom: string } {
-  const regions: { leading: string; trailing: string; center: string; bottom: string } = {
+function generateDynamicIslandExpandedCases(defs: LiveActivityDefinition[]): {
+  leading: string;
+  trailing: string;
+  center: string;
+  bottom: string;
+} {
+  const regions: {
+    leading: string;
+    trailing: string;
+    center: string;
+    bottom: string;
+  } = {
     leading: '',
     trailing: '',
     center: '',
@@ -553,7 +582,9 @@ function collectButtonIntents(node: LayoutNode): Set<string> {
 /**
  * Collects all button intent identifiers from all Live Activity definitions
  */
-export function collectAllButtonIntents(defs: LiveActivityDefinition[]): Set<string> {
+export function collectAllButtonIntents(
+  defs: LiveActivityDefinition[]
+): Set<string> {
   const allIntents = new Set<string>();
   for (const def of defs) {
     for (const id of collectButtonIntents(def.lockScreenLayout)) {
@@ -563,12 +594,19 @@ export function collectAllButtonIntents(defs: LiveActivityDefinition[]): Set<str
       for (const id of collectButtonIntents(def.dynamicIslandCompact.leading)) {
         allIntents.add(id);
       }
-      for (const id of collectButtonIntents(def.dynamicIslandCompact.trailing)) {
+      for (const id of collectButtonIntents(
+        def.dynamicIslandCompact.trailing
+      )) {
         allIntents.add(id);
       }
     }
     if (def.dynamicIslandExpanded) {
-      for (const region of ['leading', 'trailing', 'center', 'bottom'] as const) {
+      for (const region of [
+        'leading',
+        'trailing',
+        'center',
+        'bottom',
+      ] as const) {
         const node = def.dynamicIslandExpanded[region];
         if (node) {
           for (const id of collectButtonIntents(node)) {
@@ -589,35 +627,13 @@ export function collectAllButtonIntents(defs: LiveActivityDefinition[]): Set<str
  * @param appGroupConstant - The Swift constant name for the App Group ID
  */
 function generateSingleIntent(id: string, appGroupConstant: string): string {
-  const intentName = `LA_${pascalCase(id)}Intent`;
-  return `@available(iOS 16.2, *)
-struct ${intentName}: LiveActivityIntent {
-    static var title: LocalizedStringResource = "${pascalCase(id)}"
-
-    func perform() async throws -> some IntentResult {
-        guard let defaults = UserDefaults(suiteName: ${appGroupConstant}) else {
-            return .result()
-        }
-
-        let nonce = UUID().uuidString
-        defaults.set("${id}", forKey: "IosIntentsPendingCommand")
-        defaults.set(nonce, forKey: "IosIntentsCommandNonce")
-        defaults.set(Date().timeIntervalSince1970, forKey: "IosIntentsCommandTimestamp")
-        defaults.set("liveActivity", forKey: "IosIntentsSource")
-
-        // Notification name includes bundle ID to prevent interference between apps.
-        // LiveActivityIntent.perform() runs in the main app's process, so Bundle.main
-        // is always the main app.
-        let bundleId = Bundle.main.bundleIdentifier ?? "unknown"
-        CFNotificationCenterPostNotification(
-            CFNotificationCenterGetDarwinNotifyCenter(),
-            CFNotificationName("eu.eblank.likrot.iosintents.\\(bundleId).shortcut" as CFString),
-            nil, nil, true
-        )
-
-        return .result()
-    }
-}`;
+  const template = loadTemplate('LiveActivityIntent.swift.template');
+  return fillTemplate(template, {
+    INTENT_NAME: `LA_${pascalCase(id)}Intent`,
+    TITLE: pascalCase(id),
+    APP_GROUP_CONSTANT: appGroupConstant,
+    COMMAND_ID: id,
+  });
 }
 
 /**
@@ -628,7 +644,9 @@ struct ${intentName}: LiveActivityIntent {
  *
  * Uses the existing APP_GROUP_ID constant from GeneratedAppIntents.swift.
  */
-export function generateLiveActivityIntentsForApp(config: IntentsConfig): string {
+export function generateLiveActivityIntentsForApp(
+  config: IntentsConfig
+): string {
   const defs = config.liveActivities || [];
   const intents = collectAllButtonIntents(defs);
   if (intents.size === 0) {
@@ -652,7 +670,10 @@ ${stubs}`;
  * shared UserDefaults and posting a Darwin notification — the same IPC pattern
  * used by the main app's Siri shortcut intents.
  */
-function generateIntentStubs(defs: LiveActivityDefinition[], appGroupId?: string): string {
+function generateIntentStubs(
+  defs: LiveActivityDefinition[],
+  appGroupId?: string
+): string {
   const intents = collectAllButtonIntents(defs);
   if (intents.size === 0) {
     return '';
@@ -691,90 +712,14 @@ ${stubs}`;
  * Generates the @main WidgetBundle that registers the Live Activity widget
  */
 export function generateWidgetBundle(): string {
-  return `@available(iOS 16.2, *)
-@main
-struct GeneratedLiveActivityBundle: WidgetBundle {
-    var body: some Widget {
-        LiveActivityWidget()
-    }
-}`;
+  return loadTemplate('WidgetBundle.swift.template');
 }
 
 /**
  * Generates the duplicated CodableValue + GenericActivityAttributes for Widget Extension
  */
 function generateGenericAttributesForWidget(): string {
-  return `// MARK: - Generic Activity Attributes
-// Duplicated from ios/GenericActivityAttributes.swift so Widget Extension is self-contained.
-// Keep in sync: both must have the same enum cases and accessor names.
-
-@available(iOS 16.2, *)
-enum CodableValue: Codable, Hashable {
-    case string(String)
-    case double(Double)
-    case bool(Bool)
-    // Date values are stored as Unix timestamps (Double)
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-
-        if let boolValue = try? container.decode(Bool.self) {
-            self = .bool(boolValue)
-        } else if let doubleValue = try? container.decode(Double.self) {
-            self = .double(doubleValue)
-        } else if let stringValue = try? container.decode(String.self) {
-            self = .string(stringValue)
-        } else {
-            throw DecodingError.typeMismatch(
-                CodableValue.self,
-                DecodingError.Context(
-                    codingPath: decoder.codingPath,
-                    debugDescription: "Unsupported CodableValue type"
-                )
-            )
-        }
-    }
-
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        switch self {
-        case .string(let value):
-            try container.encode(value)
-        case .double(let value):
-            try container.encode(value)
-        case .bool(let value):
-            try container.encode(value)
-        }
-    }
-
-    var stringValue: String? {
-        if case .string(let v) = self { return v }
-        return nil
-    }
-
-    var doubleValue: Double? {
-        if case .double(let v) = self { return v }
-        return nil
-    }
-
-    var boolValue: Bool? {
-        if case .bool(let v) = self { return v }
-        return nil
-    }
-}
-
-@available(iOS 16.2, *)
-struct GenericActivityAttributes: ActivityAttributes {
-    var data: [String: CodableValue]
-
-    struct ContentState: Codable, Hashable {
-        var data: [String: CodableValue]
-
-        func value(_ key: String) -> CodableValue? {
-            return data[key]
-        }
-    }
-}`;
+  return loadTemplate('CodableValue.swift.template');
 }
 
 /**
@@ -788,9 +733,7 @@ struct GenericActivityAttributes: ActivityAttributes {
  * - Single LiveActivityWidget with switch dispatch
  * - Optional WidgetBundle entry point
  */
-export function generateLiveActivitySwiftFile(
-  config: IntentsConfig
-): string {
+export function generateLiveActivitySwiftFile(config: IntentsConfig): string {
   const defs = config.liveActivities || [];
   if (defs.length === 0) {
     return '';
@@ -820,27 +763,12 @@ ${bundle}`;
 ${intentStubs}`;
   }
 
-  return `//
-// GeneratedLiveActivity.swift
-//
-// AUTO-GENERATED - DO NOT EDIT
-// Generated from intents.config.ts
-// Run 'npx react-native-ios-intents generate' to regenerate
-//
-
-import ActivityKit
-import AppIntents
-import SwiftUI
-import WidgetKit
-
-${genericAttributes}${intentSection}
-
-// MARK: - Activity Views
-
-${views}
-
-// MARK: - Live Activity Widget
-
-${widget}${bundleSection}
-`;
+  const template = loadTemplate('GeneratedLiveActivity.swift.template');
+  return fillTemplate(template, {
+    GENERIC_ATTRIBUTES: genericAttributes,
+    INTENT_SECTION: intentSection,
+    ACTIVITY_VIEWS: views,
+    ACTIVITY_WIDGET: widget,
+    BUNDLE_SECTION: bundleSection,
+  });
 }

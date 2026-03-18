@@ -1,0 +1,26 @@
+//
+// GeneratedAppIntents.swift
+//
+// AUTO-GENERATED - DO NOT EDIT
+// Generated from intents.config.ts
+// Run 'npx react-native-ios-intents generate' to regenerate
+//
+
+import Foundation
+import AppIntents
+
+// App Group for inter-process communication
+// App Intents run in a separate process, so we use UserDefaults with App Group
+// The App Group ID should be configured in your app's capabilities:
+// Format: group.<bundle-identifier>
+{{APP_GROUP_ID_BLOCK}}
+
+{{INTENT_STRUCTS}}
+
+@available(iOS 16.0, *)
+struct GeneratedAppShortcutsProvider: AppShortcutsProvider {
+    static var appShortcuts: [AppShortcut] {
+{{APP_SHORTCUTS}}
+    }
+}
+{{LIVE_ACTIVITY_INTENTS_SECTION}}

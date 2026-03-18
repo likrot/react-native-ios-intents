@@ -59,7 +59,10 @@ describe('CLI Utils', () => {
   describe('extractVariables', () => {
     it.each([
       ['Hello ${name}', ['name']],
-      ['${greeting} ${name}, you have ${count} messages', ['greeting', 'name', 'count']],
+      [
+        '${greeting} ${name}, you have ${count} messages',
+        ['greeting', 'name', 'count'],
+      ],
       ['Hello World', []],
       ['${start} middle ${end}', ['start', 'end']],
       ['${first}${second}', ['first', 'second']],
@@ -74,14 +77,34 @@ describe('CLI Utils', () => {
 
   describe('generateSwiftCondition', () => {
     it.each([
-      ['appState_running', true, 'defaults.double(forKey: "appState_running") == 1'],
-      ['appState_running', false, 'defaults.double(forKey: "appState_running") == 0'],
+      [
+        'appState_running',
+        true,
+        'defaults.double(forKey: "appState_running") == 1',
+      ],
+      [
+        'appState_running',
+        false,
+        'defaults.double(forKey: "appState_running") == 0',
+      ],
       ['appState_count', 42, 'defaults.double(forKey: "appState_count") == 42'],
       ['appState_count', 0, 'defaults.double(forKey: "appState_count") == 0'],
       ['appState_temp', -10, 'defaults.double(forKey: "appState_temp") == -10'],
-      ['appState_ratio', 3.14, 'defaults.double(forKey: "appState_ratio") == 3.14'],
-      ['appState_status', 'active', 'defaults.string(forKey: "appState_status") == "active"'],
-      ['appState_status', '', 'defaults.string(forKey: "appState_status") == ""'],
+      [
+        'appState_ratio',
+        3.14,
+        'defaults.double(forKey: "appState_ratio") == 3.14',
+      ],
+      [
+        'appState_status',
+        'active',
+        'defaults.string(forKey: "appState_status") == "active"',
+      ],
+      [
+        'appState_status',
+        '',
+        'defaults.string(forKey: "appState_status") == ""',
+      ],
     ])('should generate condition for %s = %s', (key, value, expected) => {
       expect(generateSwiftCondition(key, value)).toBe(expected);
     });
@@ -97,7 +120,11 @@ describe('CLI Utils', () => {
             phrases: [],
             description: 'Test Description',
             stateDialogs: [
-              { stateKey: 'running', showWhen: true, message: 'Dialog message' },
+              {
+                stateKey: 'running',
+                showWhen: true,
+                message: 'Dialog message',
+              },
             ],
           },
         ],
@@ -107,7 +134,9 @@ describe('CLI Utils', () => {
       expect(result['test.title']).toBe('Test Title');
       expect(result['test.description']).toBe('Test Description');
       expect(result['test.stateDialogs.0.message']).toBe('Dialog message');
-      expect(result['system.error.appGroupFailed']).toBe('Failed to communicate with app');
+      expect(result['system.error.appGroupFailed']).toBe(
+        'Failed to communicate with app'
+      );
       expect(result['system.timeout']).toBe('Done');
     });
 
@@ -127,7 +156,10 @@ describe('CLI Utils', () => {
   describe('extractAppShortcutsPhrases', () => {
     it.each([
       [['Start timer'], ['Start timer in ${applicationName}']],
-      [['Start', 'Begin'], ['Start in ${applicationName}', 'Begin in ${applicationName}']],
+      [
+        ['Start', 'Begin'],
+        ['Start in ${applicationName}', 'Begin in ${applicationName}'],
+      ],
       [[], []],
     ])('should convert phrases %j to %j', (input, expected) => {
       const config: IntentsConfig = {
@@ -139,14 +171,20 @@ describe('CLI Utils', () => {
 
   describe('generateAppShortcutsStrings', () => {
     it.each([
-      [['Start in ${applicationName}'], '"Start in ${applicationName}" = "Start in ${applicationName}";'],
+      [
+        ['Start in ${applicationName}'],
+        '"Start in ${applicationName}" = "Start in ${applicationName}";',
+      ],
       [[], ''],
     ])('should generate .strings from %j', (phrases, expected) => {
       expect(generateAppShortcutsStrings(phrases)).toBe(expected);
     });
 
     it('should join multiple phrases with newlines', () => {
-      const phrases = ['Start in ${applicationName}', 'Stop in ${applicationName}'];
+      const phrases = [
+        'Start in ${applicationName}',
+        'Stop in ${applicationName}',
+      ];
       const result = generateAppShortcutsStrings(phrases);
       expect(result.split('\n')).toHaveLength(2);
     });
@@ -161,8 +199,12 @@ describe('CLI Utils', () => {
       expect(parsed.sourceLanguage).toBe('en');
       expect(parsed.version).toBe('1.0');
       expect(parsed.strings['test.title'].extractionState).toBe('manual');
-      expect(parsed.strings['test.title'].localizations.en.stringUnit.state).toBe('translated');
-      expect(parsed.strings['test.title'].localizations.en.stringUnit.value).toBe('Test Title');
+      expect(
+        parsed.strings['test.title'].localizations.en.stringUnit.state
+      ).toBe('translated');
+      expect(
+        parsed.strings['test.title'].localizations.en.stringUnit.value
+      ).toBe('Test Title');
     });
 
     it('should handle empty strings object', () => {
@@ -179,7 +221,9 @@ describe('CLI Utils', () => {
 
       expect(parsed.sourceLanguage).toBe('en');
       expect(parsed.version).toBe('1.0');
-      expect(parsed.strings['test.title'].localizations.en.stringUnit.value).toBe('Test Title');
+      expect(
+        parsed.strings['test.title'].localizations.en.stringUnit.value
+      ).toBe('Test Title');
     });
 
     it('should preserve existing translations when updating English default', () => {
@@ -191,8 +235,12 @@ describe('CLI Utils', () => {
             extractionState: 'manual',
             localizations: {
               en: { stringUnit: { state: 'translated', value: 'Old Title' } },
-              es: { stringUnit: { state: 'translated', value: 'Título de Prueba' } },
-              fr: { stringUnit: { state: 'translated', value: 'Titre de Test' } },
+              es: {
+                stringUnit: { state: 'translated', value: 'Título de Prueba' },
+              },
+              fr: {
+                stringUnit: { state: 'translated', value: 'Titre de Test' },
+              },
             },
           },
         },
@@ -203,10 +251,16 @@ describe('CLI Utils', () => {
       const parsed = JSON.parse(result);
 
       // English value should be updated
-      expect(parsed.strings['test.title'].localizations.en.stringUnit.value).toBe('New Title');
+      expect(
+        parsed.strings['test.title'].localizations.en.stringUnit.value
+      ).toBe('New Title');
       // Other languages should be preserved
-      expect(parsed.strings['test.title'].localizations.es.stringUnit.value).toBe('Título de Prueba');
-      expect(parsed.strings['test.title'].localizations.fr.stringUnit.value).toBe('Titre de Test');
+      expect(
+        parsed.strings['test.title'].localizations.es.stringUnit.value
+      ).toBe('Título de Prueba');
+      expect(
+        parsed.strings['test.title'].localizations.fr.stringUnit.value
+      ).toBe('Titre de Test');
     });
 
     it('should add new keys while preserving old ones', () => {
@@ -218,7 +272,9 @@ describe('CLI Utils', () => {
             extractionState: 'manual',
             localizations: {
               en: { stringUnit: { state: 'translated', value: 'Old Key' } },
-              es: { stringUnit: { state: 'translated', value: 'Clave Antigua' } },
+              es: {
+                stringUnit: { state: 'translated', value: 'Clave Antigua' },
+              },
             },
           },
         },
@@ -229,10 +285,16 @@ describe('CLI Utils', () => {
       const parsed = JSON.parse(result);
 
       // Old key should still exist with all translations
-      expect(parsed.strings['old.key'].localizations.en.stringUnit.value).toBe('Old Key');
-      expect(parsed.strings['old.key'].localizations.es.stringUnit.value).toBe('Clave Antigua');
+      expect(parsed.strings['old.key'].localizations.en.stringUnit.value).toBe(
+        'Old Key'
+      );
+      expect(parsed.strings['old.key'].localizations.es.stringUnit.value).toBe(
+        'Clave Antigua'
+      );
       // New key should be added with only English
-      expect(parsed.strings['new.key'].localizations.en.stringUnit.value).toBe('New Key');
+      expect(parsed.strings['new.key'].localizations.en.stringUnit.value).toBe(
+        'New Key'
+      );
       expect(parsed.strings['new.key'].localizations.es).toBeUndefined();
     });
 
@@ -259,10 +321,16 @@ describe('CLI Utils', () => {
       const parsed = JSON.parse(result);
 
       // Existing key updated, German preserved
-      expect(parsed.strings['existing.key'].localizations.en.stringUnit.value).toBe('Updated Value');
-      expect(parsed.strings['existing.key'].localizations.de.stringUnit.value).toBe('Alter Wert');
+      expect(
+        parsed.strings['existing.key'].localizations.en.stringUnit.value
+      ).toBe('Updated Value');
+      expect(
+        parsed.strings['existing.key'].localizations.de.stringUnit.value
+      ).toBe('Alter Wert');
       // New key added
-      expect(parsed.strings['brand.new.key'].localizations.en.stringUnit.value).toBe('Brand New');
+      expect(
+        parsed.strings['brand.new.key'].localizations.en.stringUnit.value
+      ).toBe('Brand New');
     });
 
     it('should handle invalid JSON gracefully', () => {
@@ -274,7 +342,9 @@ describe('CLI Utils', () => {
       const parsed = JSON.parse(result);
 
       expect(parsed.strings['test.key']).toBeDefined();
-      expect(parsed.strings['test.key'].localizations.en.stringUnit.value).toBe('Test Value');
+      expect(parsed.strings['test.key'].localizations.en.stringUnit.value).toBe(
+        'Test Value'
+      );
     });
 
     it('should preserve sourceLanguage and version from existing catalog', () => {
@@ -324,18 +394,32 @@ describe('CLI Utils', () => {
       const parsed = JSON.parse(result);
 
       // Updated key: English updated, other languages preserved
-      expect(parsed.strings['startTimer.title'].localizations.en.stringUnit.value).toBe('Start Timer (Updated)');
-      expect(parsed.strings['startTimer.title'].localizations.es.stringUnit.value).toBe('Iniciar Temporizador');
-      expect(parsed.strings['startTimer.title'].localizations.fr.stringUnit.value).toBe('Démarrer le Minuteur');
-      expect(parsed.strings['startTimer.title'].localizations.de.stringUnit.value).toBe('Timer Starten');
+      expect(
+        parsed.strings['startTimer.title'].localizations.en.stringUnit.value
+      ).toBe('Start Timer (Updated)');
+      expect(
+        parsed.strings['startTimer.title'].localizations.es.stringUnit.value
+      ).toBe('Iniciar Temporizador');
+      expect(
+        parsed.strings['startTimer.title'].localizations.fr.stringUnit.value
+      ).toBe('Démarrer le Minuteur');
+      expect(
+        parsed.strings['startTimer.title'].localizations.de.stringUnit.value
+      ).toBe('Timer Starten');
 
       // Old keys preserved
       expect(parsed.strings['stopTimer.title']).toBeDefined();
-      expect(parsed.strings['system.timeout'].localizations.fr.stringUnit.value).toBe('Terminé');
+      expect(
+        parsed.strings['system.timeout'].localizations.fr.stringUnit.value
+      ).toBe('Terminé');
 
       // New key added
-      expect(parsed.strings['newFeature.title'].localizations.en.stringUnit.value).toBe('New Feature');
-      expect(parsed.strings['newFeature.title'].localizations.es).toBeUndefined();
+      expect(
+        parsed.strings['newFeature.title'].localizations.en.stringUnit.value
+      ).toBe('New Feature');
+      expect(
+        parsed.strings['newFeature.title'].localizations.es
+      ).toBeUndefined();
     });
 
     it('should handle invalid fixture gracefully', () => {
@@ -426,7 +510,9 @@ This is not a valid line
       expect(result).toContain('"Another valid" = "Another valid";');
       expect(result).toContain('"New phrase" = "New phrase";');
       // Malformed line should be ignored
-      expect(result.split('\n').filter((l) => l === 'This is not a valid line')).toHaveLength(0);
+      expect(
+        result.split('\n').filter((l) => l === 'This is not a valid line')
+      ).toHaveLength(0);
     });
 
     it('should handle phrases with special characters', () => {
@@ -449,15 +535,23 @@ This is not a valid line
       const result = mergeAppShortcutsStrings(newPhrases, existingPhrases);
 
       // Existing entries preserved (base file has key = key format)
-      expect(result).toContain('"Start timer in ${applicationName}" = "Start timer in ${applicationName}";');
-      expect(result).toContain('"Stop timer in ${applicationName}" = "Stop timer in ${applicationName}";');
-      expect(result).toContain('"Pause timer in ${applicationName}" = "Pause timer in ${applicationName}";');
+      expect(result).toContain(
+        '"Start timer in ${applicationName}" = "Start timer in ${applicationName}";'
+      );
+      expect(result).toContain(
+        '"Stop timer in ${applicationName}" = "Stop timer in ${applicationName}";'
+      );
+      expect(result).toContain(
+        '"Pause timer in ${applicationName}" = "Pause timer in ${applicationName}";'
+      );
 
       // Old phrase not in new list still preserved
       expect(result).toContain('"Resume timer in ${applicationName}"');
 
       // New phrase added with default
-      expect(result).toContain('"Reset timer in ${applicationName}" = "Reset timer in ${applicationName}";');
+      expect(result).toContain(
+        '"Reset timer in ${applicationName}" = "Reset timer in ${applicationName}";'
+      );
     });
   });
 
@@ -472,17 +566,29 @@ This is not a valid line
       expect(result['checkStatus.title']).toBe('Check Timer Status');
 
       // Descriptions
-      expect(result['startTimer.description']).toBe('Start a new timer session');
+      expect(result['startTimer.description']).toBe(
+        'Start a new timer session'
+      );
       expect(result['stopTimer.description']).toBe('Stop the current timer');
-      expect(result['checkStatus.description']).toBe('Check current timer status with interpolation');
+      expect(result['checkStatus.description']).toBe(
+        'Check current timer status with interpolation'
+      );
 
       // State dialog messages
-      expect(result['startTimer.stateDialogs.0.message']).toBe('Timer is already running. Stop it first?');
-      expect(result['stopTimer.stateDialogs.0.message']).toBe('No timer is running');
-      expect(result['checkStatus.stateDialogs.0.message']).toBe('Timer ${taskName} has been running for ${elapsedTime}');
+      expect(result['startTimer.stateDialogs.0.message']).toBe(
+        'Timer is already running. Stop it first?'
+      );
+      expect(result['stopTimer.stateDialogs.0.message']).toBe(
+        'No timer is running'
+      );
+      expect(result['checkStatus.stateDialogs.0.message']).toBe(
+        'Timer ${taskName} has been running for ${elapsedTime}'
+      );
 
       // System messages
-      expect(result['system.error.appGroupFailed']).toBe('Failed to communicate with app');
+      expect(result['system.error.appGroupFailed']).toBe(
+        'Failed to communicate with app'
+      );
       expect(result['system.timeout']).toBe('Done');
     });
   });
@@ -517,7 +623,9 @@ This is not a valid line
       expect(result).toContain("identifier: 'startTimer'");
 
       // Extract just the ShortcutInvocation type (between its declaration and the next export)
-      const shortcutTypeMatch = result.match(/export type ShortcutInvocation =([\s\S]*?);/);
+      const shortcutTypeMatch = result.match(
+        /export type ShortcutInvocation =([\s\S]*?);/
+      );
       expect(shortcutTypeMatch).not.toBeNull();
       expect(shortcutTypeMatch![1]).not.toContain('pauseTimer');
     });
@@ -539,8 +647,16 @@ This is not a valid line
             lockScreenLayout: {
               type: 'vstack' as const,
               children: [
-                { type: 'button' as const, shortcutIdentifier: 'pauseTimer', title: 'Pause' },
-                { type: 'button' as const, shortcutIdentifier: 'resumeTimer', title: 'Resume' },
+                {
+                  type: 'button' as const,
+                  shortcutIdentifier: 'pauseTimer',
+                  title: 'Pause',
+                },
+                {
+                  type: 'button' as const,
+                  shortcutIdentifier: 'resumeTimer',
+                  title: 'Resume',
+                },
               ],
             },
           },

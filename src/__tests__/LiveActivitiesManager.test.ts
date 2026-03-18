@@ -45,7 +45,10 @@ jest.mock('react-native-nitro-modules', () => {
 import { LiveActivitiesManager } from '../LiveActivitiesManager';
 
 // Retrieve the mock functions from the mocked module
-const { __mockLiveActivityModule: mockModule, __mockIosIntentsModule: mockIosIntents } = jest.requireMock<{
+const {
+  __mockLiveActivityModule: mockModule,
+  __mockIosIntentsModule: mockIosIntents,
+} = jest.requireMock<{
   __mockLiveActivityModule: {
     startActivity: jest.Mock;
     updateActivity: jest.Mock;
@@ -226,9 +229,14 @@ describe('LiveActivitiesManager', () => {
       mockModule.updateActivity.mockReturnValue(true);
       const staleDate = new Date('2025-06-01T12:00:00Z');
 
-      manager.updateActivity('activity-123', 'timerActivity', {
-        elapsedSeconds: 60,
-      }, staleDate);
+      manager.updateActivity(
+        'activity-123',
+        'timerActivity',
+        {
+          elapsedSeconds: 60,
+        },
+        staleDate
+      );
 
       expect(mockModule.updateActivity).toHaveBeenCalledWith(
         'timerActivity',
@@ -319,7 +327,9 @@ describe('LiveActivitiesManager', () => {
 
   describe('convertData warnings', () => {
     it('should warn and skip unsupported value types', () => {
-      const { logger: mockLogger } = jest.requireMock<{ logger: { warn: jest.Mock } }>('../Logger');
+      const { logger: mockLogger } = jest.requireMock<{
+        logger: { warn: jest.Mock };
+      }>('../Logger');
       mockLogger.warn.mockClear();
       mockModule.startActivity.mockReturnValue('activity-123');
 
@@ -351,7 +361,9 @@ describe('LiveActivitiesManager', () => {
       const listener = jest.fn();
       manager.addEventListener('button', listener);
 
-      expect(mockIosIntents.setLiveActivityButtonCallback).toHaveBeenCalledTimes(1);
+      expect(
+        mockIosIntents.setLiveActivityButtonCallback
+      ).toHaveBeenCalledTimes(1);
     });
 
     it('should not register native callback again for subsequent listeners', () => {
@@ -360,7 +372,9 @@ describe('LiveActivitiesManager', () => {
       manager.addEventListener('button', listener1);
       manager.addEventListener('button', listener2);
 
-      expect(mockIosIntents.setLiveActivityButtonCallback).toHaveBeenCalledTimes(1);
+      expect(
+        mockIosIntents.setLiveActivityButtonCallback
+      ).toHaveBeenCalledTimes(1);
     });
 
     it('should invoke listener when native callback fires', () => {
@@ -368,7 +382,8 @@ describe('LiveActivitiesManager', () => {
       manager.addEventListener('button', listener);
 
       // Get the callback that was passed to native
-      const nativeCallback = mockIosIntents.setLiveActivityButtonCallback.mock.calls[0][0];
+      const nativeCallback =
+        mockIosIntents.setLiveActivityButtonCallback.mock.calls[0][0];
       nativeCallback({ identifier: 'pauseTimer', nonce: 'abc-123' });
 
       expect(listener).toHaveBeenCalledWith({
@@ -383,7 +398,8 @@ describe('LiveActivitiesManager', () => {
       manager.addEventListener('button', listener1);
       manager.addEventListener('button', listener2);
 
-      const nativeCallback = mockIosIntents.setLiveActivityButtonCallback.mock.calls[0][0];
+      const nativeCallback =
+        mockIosIntents.setLiveActivityButtonCallback.mock.calls[0][0];
       nativeCallback({ identifier: 'resumeTimer', nonce: 'def-456' });
 
       expect(listener1).toHaveBeenCalledWith({
@@ -403,7 +419,8 @@ describe('LiveActivitiesManager', () => {
       sub.remove();
 
       // Fire native callback — listener should NOT be called
-      const nativeCallback = mockIosIntents.setLiveActivityButtonCallback.mock.calls[0][0];
+      const nativeCallback =
+        mockIosIntents.setLiveActivityButtonCallback.mock.calls[0][0];
       nativeCallback({ identifier: 'pauseTimer', nonce: 'abc-123' });
 
       expect(listener).not.toHaveBeenCalled();
@@ -418,16 +435,21 @@ describe('LiveActivitiesManager', () => {
       const listener2 = jest.fn();
       manager.addEventListener('button', listener2);
 
-      expect(mockIosIntents.setLiveActivityButtonCallback).toHaveBeenCalledTimes(2);
+      expect(
+        mockIosIntents.setLiveActivityButtonCallback
+      ).toHaveBeenCalledTimes(2);
     });
 
     it('should not throw when listener throws', () => {
-      const errorListener = jest.fn(() => { throw new Error('listener error'); });
+      const errorListener = jest.fn(() => {
+        throw new Error('listener error');
+      });
       const goodListener = jest.fn();
       manager.addEventListener('button', errorListener);
       manager.addEventListener('button', goodListener);
 
-      const nativeCallback = mockIosIntents.setLiveActivityButtonCallback.mock.calls[0][0];
+      const nativeCallback =
+        mockIosIntents.setLiveActivityButtonCallback.mock.calls[0][0];
 
       expect(() => {
         nativeCallback({ identifier: 'pauseTimer', nonce: 'abc-123' });

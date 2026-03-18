@@ -1,0 +1,71 @@
+// MARK: - Generic Activity Attributes
+// Duplicated from ios/GenericActivityAttributes.swift so Widget Extension is self-contained.
+// Keep in sync: both must have the same enum cases and accessor names.
+
+@available(iOS 16.2, *)
+enum CodableValue: Codable, Hashable {
+    case string(String)
+    case double(Double)
+    case bool(Bool)
+    // Date values are stored as Unix timestamps (Double)
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+
+        if let boolValue = try? container.decode(Bool.self) {
+            self = .bool(boolValue)
+        } else if let doubleValue = try? container.decode(Double.self) {
+            self = .double(doubleValue)
+        } else if let stringValue = try? container.decode(String.self) {
+            self = .string(stringValue)
+        } else {
+            throw DecodingError.typeMismatch(
+                CodableValue.self,
+                DecodingError.Context(
+                    codingPath: decoder.codingPath,
+                    debugDescription: "Unsupported CodableValue type"
+                )
+            )
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .string(let value):
+            try container.encode(value)
+        case .double(let value):
+            try container.encode(value)
+        case .bool(let value):
+            try container.encode(value)
+        }
+    }
+
+    var stringValue: String? {
+        if case .string(let v) = self { return v }
+        return nil
+    }
+
+    var doubleValue: Double? {
+        if case .double(let v) = self { return v }
+        return nil
+    }
+
+    var boolValue: Bool? {
+        if case .bool(let v) = self { return v }
+        return nil
+    }
+}
+
+@available(iOS 16.2, *)
+struct GenericActivityAttributes: ActivityAttributes {
+    var data: [String: CodableValue]
+
+    struct ContentState: Codable, Hashable {
+        var data: [String: CodableValue]
+
+        func value(_ key: String) -> CodableValue? {
+            return data[key]
+        }
+    }
+}

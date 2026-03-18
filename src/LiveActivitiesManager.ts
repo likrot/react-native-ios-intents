@@ -1,9 +1,15 @@
 import { NitroModules } from 'react-native-nitro-modules';
 import { Platform } from 'react-native';
-import type { LiveActivityModule as ILiveActivityModule, RunningActivityInfo } from './LiveActivity.nitro';
+import type {
+  LiveActivityModule as ILiveActivityModule,
+  RunningActivityInfo,
+} from './LiveActivity.nitro';
 import type { NativeLiveActivityButtonData } from './IosIntents.nitro';
 import { IosIntentsModule } from './NativeIosIntents';
-import type { LiveActivityData, LiveActivityButtonAction } from './liveactivity-types';
+import type {
+  LiveActivityData,
+  LiveActivityButtonAction,
+} from './liveactivity-types';
 import { logger } from './Logger';
 
 // Get Nitro module instance (iOS only)
@@ -37,7 +43,8 @@ const LiveActivityModule =
  * ```
  */
 export class LiveActivitiesManager {
-  private buttonListeners: Set<(action: LiveActivityButtonAction) => void> = new Set();
+  private buttonListeners: Set<(action: LiveActivityButtonAction) => void> =
+    new Set();
   private nativeButtonCallbackRegistered: boolean = false;
 
   /**
@@ -54,22 +61,24 @@ export class LiveActivitiesManager {
 
     logger.info('Registering native callback for Live Activity buttons...');
 
-    IosIntentsModule.setLiveActivityButtonCallback((data: NativeLiveActivityButtonData) => {
-      logger.debug('Received LA button tap:', JSON.stringify(data));
+    IosIntentsModule.setLiveActivityButtonCallback(
+      (data: NativeLiveActivityButtonData) => {
+        logger.debug('Received LA button tap:', JSON.stringify(data));
 
-      const action: LiveActivityButtonAction = {
-        identifier: data.identifier,
-        nonce: data.nonce,
-      };
+        const action: LiveActivityButtonAction = {
+          identifier: data.identifier,
+          nonce: data.nonce,
+        };
 
-      this.buttonListeners.forEach((listener) => {
-        try {
-          listener(action);
-        } catch (error) {
-          logger.error('Error in LA button listener:', error);
-        }
-      });
-    });
+        this.buttonListeners.forEach((listener) => {
+          try {
+            listener(action);
+          } catch (error) {
+            logger.error('Error in LA button listener:', error);
+          }
+        });
+      }
+    );
 
     this.nativeButtonCallbackRegistered = true;
     logger.info('Native LA button callback registered');
@@ -90,18 +99,21 @@ export class LiveActivitiesManager {
    * // Later: sub.remove();
    * ```
    */
-  addEventListener<T extends LiveActivityButtonAction = LiveActivityButtonAction>(
-    event: 'button',
-    listener: (action: T) => void
-  ): { remove: () => void } {
-    this.buttonListeners.add(listener as (action: LiveActivityButtonAction) => void);
+  addEventListener<
+    T extends LiveActivityButtonAction = LiveActivityButtonAction,
+  >(event: 'button', listener: (action: T) => void): { remove: () => void } {
+    this.buttonListeners.add(
+      listener as (action: LiveActivityButtonAction) => void
+    );
     logger.debug(`Added listener for ${event}`);
 
     this.ensureNativeButtonCallback();
 
     return {
       remove: () => {
-        this.buttonListeners.delete(listener as (action: LiveActivityButtonAction) => void);
+        this.buttonListeners.delete(
+          listener as (action: LiveActivityButtonAction) => void
+        );
         logger.debug(`Removed listener for ${event}`);
 
         if (this.buttonListeners.size === 0) {
@@ -137,9 +149,7 @@ export class LiveActivitiesManager {
       activityType: type,
       attributes: this.convertData(attributes),
       contentState: this.convertData(state),
-      staleDateTimestamp: staleDate
-        ? staleDate.getTime() / 1000
-        : undefined,
+      staleDateTimestamp: staleDate ? staleDate.getTime() / 1000 : undefined,
     });
 
     if (result) {

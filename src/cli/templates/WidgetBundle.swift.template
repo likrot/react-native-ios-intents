@@ -1,0 +1,7 @@
+@available(iOS 16.2, *)
+@main
+struct GeneratedLiveActivityBundle: WidgetBundle {
+    var body: some Widget {
+        LiveActivityWidget()
+    }
+}

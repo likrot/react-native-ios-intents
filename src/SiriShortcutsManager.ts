@@ -21,7 +21,10 @@ const EVENT_SHORTCUT = 'shortcut' as const;
  * 3. Type safety is enforced at the addEventListener() API boundary
  * 4. This allows storing listeners with different generic types in the same Set
  */
-type AnyShortcutListener = (shortcut: any, respond: RespondCallback) => void | Promise<void>; //TODO: check if this any can/should be replaced with some generiv maybe
+type AnyShortcutListener = (
+  shortcut: any,
+  respond: RespondCallback
+) => void | Promise<void>; //TODO: check if this any can/should be replaced with some generiv maybe
 
 /**
  * Singleton manager for Siri Shortcuts
@@ -63,7 +66,10 @@ export class SiriShortcutsManager {
 
     // Register callback with native module to receive shortcut events
     module.setShortcutCallback((nativeData: NativeShortcutData) => {
-      logger.debug('Received shortcut from native:', JSON.stringify(nativeData));
+      logger.debug(
+        'Received shortcut from native:',
+        JSON.stringify(nativeData)
+      );
 
       const shortcut: ShortcutInvocation = {
         identifier: nativeData.identifier,
@@ -103,7 +109,14 @@ export class SiriShortcutsManager {
    * subscription.remove();
    * ```
    */
-  addEventListener<T extends { identifier: string; nonce: string; parameters?: Record<string, unknown>; userConfirmed?: boolean } = ShortcutInvocation>(
+  addEventListener<
+    T extends {
+      identifier: string;
+      nonce: string;
+      parameters?: Record<string, unknown>;
+      userConfirmed?: boolean;
+    } = ShortcutInvocation,
+  >(
     event: 'shortcut',
     listener: (shortcut: T, respond: RespondCallback) => void | Promise<void>
   ): { remove: () => void } {
@@ -229,7 +242,10 @@ export class SiriShortcutsManager {
         try {
           module.setSharedString(stateKey, JSON.stringify(value));
         } catch (serializeError) {
-          logger.warn(`Cannot serialize value for key "${key}":`, serializeError);
+          logger.warn(
+            `Cannot serialize value for key "${key}":`,
+            serializeError
+          );
         }
       }
     });
@@ -258,7 +274,12 @@ export class SiriShortcutsManager {
 
         try {
           const message = response.message ?? '';
-          logger.debug('Sending response for', shortcut.nonce, ':', message || '(silent)');
+          logger.debug(
+            'Sending response for',
+            shortcut.nonce,
+            ':',
+            message || '(silent)'
+          );
 
           // Write response to shared UserDefaults using nonce as key
           // Swift App Intent will poll for this response
