@@ -5,7 +5,12 @@
  * These functions build AppIntent structs, state-based dialogs, and the complete Swift file.
  */
 
-import type { IntentsConfig, ShortcutDefinition, StateDialog, ShortcutParameter } from '../types';
+import type {
+  IntentsConfig,
+  ShortcutDefinition,
+  StateDialog,
+  ShortcutParameter,
+} from '../types';
 import {
   pascalCase,
   escapeForSwift,
@@ -89,7 +94,14 @@ export function generateStateDialogSwift(params: {
   localizationKey: string;
   useLocalization: boolean;
 }): { code: string; isConfirmation: boolean } {
-  const { index, className, dialog, condition, localizationKey, useLocalization } = params;
+  const {
+    index,
+    className,
+    dialog,
+    condition,
+    localizationKey,
+    useLocalization,
+  } = params;
   const requiresConfirmation = dialog.requiresConfirmation !== false;
   const hasInterpolation = extractVariables(dialog.message).length > 0;
 
@@ -114,8 +126,12 @@ export function generateStateDialogSwift(params: {
       : `"${escapeForSwift(dialog.message)}"`;
   }
 
-  const actionType = requiresConfirmation ? 'confirmation' : 'message and return';
-  const logMessage = requiresConfirmation ? 'Confirmation required' : 'Showing message (no confirmation)';
+  const actionType = requiresConfirmation
+    ? 'confirmation'
+    : 'message and return';
+  const logMessage = requiresConfirmation
+    ? 'Confirmation required'
+    : 'Showing message (no confirmation)';
 
   const actionCode = requiresConfirmation
     ? `do {
@@ -138,7 +154,7 @@ export function generateStateDialogSwift(params: {
             print("[${className}] ${logMessage}: ${dialog.stateKey} is ${dialog.showWhen}")
             ${messageCode}${actionCode}
         }`,
-    isConfirmation: requiresConfirmation
+    isConfirmation: requiresConfirmation,
   };
 }
 
@@ -611,7 +627,9 @@ export function generateSwiftFile(
     return "group.\\(bundleId)"
 }`;
 
-  const liveActivitySection = liveActivityIntents ? `\n${liveActivityIntents}\n` : '';
+  const liveActivitySection = liveActivityIntents
+    ? `\n${liveActivityIntents}\n`
+    : '';
 
   const template = loadTemplate('GeneratedAppIntents.swift.template');
   return fillTemplate(template, {

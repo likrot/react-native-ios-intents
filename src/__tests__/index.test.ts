@@ -36,7 +36,8 @@ import { NitroModules } from 'react-native-nitro-modules';
 // Get reference to the mocked methods
 const mockCreateHybridObject = NitroModules.createHybridObject as jest.Mock;
 const mockNitroModule = mockCreateHybridObject.mock.results[0]?.value;
-const mockSetShortcutCallback = mockNitroModule?.setShortcutCallback as jest.Mock;
+const mockSetShortcutCallback =
+  mockNitroModule?.setShortcutCallback as jest.Mock;
 
 describe('SiriShortcuts API', () => {
   let nativeCallback: ((data: NativeShortcutData) => void) | null = null;
@@ -75,8 +76,12 @@ describe('SiriShortcuts API', () => {
       SiriShortcuts.addEventListener('shortcut', listener);
 
       expect(mockSetShortcutCallback).toHaveBeenCalledTimes(1);
-      expect(logger.info).toHaveBeenCalledWith('Registering native callback for Darwin notifications...');
-      expect(logger.info).toHaveBeenCalledWith('Native callback registered successfully');
+      expect(logger.info).toHaveBeenCalledWith(
+        'Registering native callback for Darwin notifications...'
+      );
+      expect(logger.info).toHaveBeenCalledWith(
+        'Native callback registered successfully'
+      );
     });
 
     it('should not register native callback multiple times', () => {
@@ -123,7 +128,9 @@ describe('SiriShortcuts API', () => {
 
       // Remove first listener
       sub1.remove();
-      expect(logger.debug).toHaveBeenCalledWith('Removed listener for shortcut');
+      expect(logger.debug).toHaveBeenCalledWith(
+        'Removed listener for shortcut'
+      );
 
       // Invoke again
       jest.clearAllMocks();
@@ -140,7 +147,9 @@ describe('SiriShortcuts API', () => {
       subscription.remove();
       expect(() => subscription.remove()).not.toThrow();
 
-      expect(logger.debug).toHaveBeenCalledWith('Removed listener for shortcut');
+      expect(logger.debug).toHaveBeenCalledWith(
+        'Removed listener for shortcut'
+      );
     });
   });
 });

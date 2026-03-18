@@ -74,7 +74,12 @@ export function generateLayoutSwiftUI(
   contentStateFields: Record<string, LiveActivityFieldDef>,
   indentStr: string = indent(4)
 ): string {
-  const inner = generateLayoutSwiftUIInner(node, attributeFields, contentStateFields, indentStr);
+  const inner = generateLayoutSwiftUIInner(
+    node,
+    attributeFields,
+    contentStateFields,
+    indentStr
+  );
 
   // Wrap with showWhen conditional if specified
   if (node.showWhen) {
@@ -90,7 +95,10 @@ export function generateLayoutSwiftUI(
     }
 
     return `${indentStr}if ${comparison} {
-${inner.split('\n').map(line => '    ' + line).join('\n')}
+${inner
+  .split('\n')
+  .map((line) => '    ' + line)
+  .join('\n')}
 ${indentStr}}`;
   }
 
@@ -111,7 +119,12 @@ function generateLayoutSwiftUIInner(
       return `${indentStr}Spacer()`;
 
     case 'text':
-      return generateTextNode(node, attributeFields, contentStateFields, indentStr);
+      return generateTextNode(
+        node,
+        attributeFields,
+        contentStateFields,
+        indentStr
+      );
 
     case 'image':
       return generateImageNode(node, indentStr);
@@ -296,7 +309,12 @@ function generateStackNode(
 
   const children = (node.children || [])
     .map((child) =>
-      generateLayoutSwiftUI(child, attributeFields, contentStateFields, childIndent)
+      generateLayoutSwiftUI(
+        child,
+        attributeFields,
+        contentStateFields,
+        childIndent
+      )
     )
     .join('\n');
 
@@ -354,9 +372,7 @@ export function resolveInterpolation(
 /**
  * Generates a SwiftUI View struct for a single Live Activity type
  */
-export function generateActivityView(
-  def: LiveActivityDefinition
-): string {
+export function generateActivityView(def: LiveActivityDefinition): string {
   const viewName = `${pascalCase(def.identifier)}View`;
   const attributeFields = def.attributes;
   const contentStateFields = def.contentState;
@@ -385,15 +401,15 @@ ${lockScreenBody}
 /**
  * Generates the single LiveActivityWidget with switch dispatch for all activity types
  */
-export function generateActivityWidget(
-  defs: LiveActivityDefinition[]
-): string {
+export function generateActivityWidget(defs: LiveActivityDefinition[]): string {
   // Generate switch cases for lock screen
-  const lockScreenCases = defs.map((def) => {
-    const viewName = `${pascalCase(def.identifier)}View`;
-    return `${indent(4)}case "${def.identifier}":
+  const lockScreenCases = defs
+    .map((def) => {
+      const viewName = `${pascalCase(def.identifier)}View`;
+      return `${indent(4)}case "${def.identifier}":
 ${indent(5)}${viewName}(context: context)`;
-  }).join('\n');
+    })
+    .join('\n');
 
   // Generate Dynamic Island content for each activity type
   // For simplicity, use the first definition's dynamic island config or defaults
@@ -419,13 +435,17 @@ ${indent(1)}}
 /**
  * Generates Dynamic Island content with switch dispatch
  */
-function generateDynamicIslandContent(
-  defs: LiveActivityDefinition[]
-): string {
+function generateDynamicIslandContent(defs: LiveActivityDefinition[]): string {
   // Build per-activity expanded regions
   const expandedCases = generateDynamicIslandExpandedCases(defs);
-  const compactLeadingCases = generateDynamicIslandCompactCases(defs, 'leading');
-  const compactTrailingCases = generateDynamicIslandCompactCases(defs, 'trailing');
+  const compactLeadingCases = generateDynamicIslandCompactCases(
+    defs,
+    'leading'
+  );
+  const compactTrailingCases = generateDynamicIslandCompactCases(
+    defs,
+    'trailing'
+  );
 
   return `${indent(3)}let type = context.attributes.data["_activityType"]?.stringValue ?? ""
 ${indent(3)}return DynamicIsland {
@@ -453,10 +473,18 @@ ${indent(3)}}`;
 /**
  * Generates switch-based Dynamic Island expanded region content
  */
-function generateDynamicIslandExpandedCases(
-  defs: LiveActivityDefinition[]
-): { leading: string; trailing: string; center: string; bottom: string } {
-  const regions: { leading: string; trailing: string; center: string; bottom: string } = {
+function generateDynamicIslandExpandedCases(defs: LiveActivityDefinition[]): {
+  leading: string;
+  trailing: string;
+  center: string;
+  bottom: string;
+} {
+  const regions: {
+    leading: string;
+    trailing: string;
+    center: string;
+    bottom: string;
+  } = {
     leading: '',
     trailing: '',
     center: '',
@@ -554,7 +582,9 @@ function collectButtonIntents(node: LayoutNode): Set<string> {
 /**
  * Collects all button intent identifiers from all Live Activity definitions
  */
-export function collectAllButtonIntents(defs: LiveActivityDefinition[]): Set<string> {
+export function collectAllButtonIntents(
+  defs: LiveActivityDefinition[]
+): Set<string> {
   const allIntents = new Set<string>();
   for (const def of defs) {
     for (const id of collectButtonIntents(def.lockScreenLayout)) {
@@ -564,12 +594,19 @@ export function collectAllButtonIntents(defs: LiveActivityDefinition[]): Set<str
       for (const id of collectButtonIntents(def.dynamicIslandCompact.leading)) {
         allIntents.add(id);
       }
-      for (const id of collectButtonIntents(def.dynamicIslandCompact.trailing)) {
+      for (const id of collectButtonIntents(
+        def.dynamicIslandCompact.trailing
+      )) {
         allIntents.add(id);
       }
     }
     if (def.dynamicIslandExpanded) {
-      for (const region of ['leading', 'trailing', 'center', 'bottom'] as const) {
+      for (const region of [
+        'leading',
+        'trailing',
+        'center',
+        'bottom',
+      ] as const) {
         const node = def.dynamicIslandExpanded[region];
         if (node) {
           for (const id of collectButtonIntents(node)) {
@@ -607,7 +644,9 @@ function generateSingleIntent(id: string, appGroupConstant: string): string {
  *
  * Uses the existing APP_GROUP_ID constant from GeneratedAppIntents.swift.
  */
-export function generateLiveActivityIntentsForApp(config: IntentsConfig): string {
+export function generateLiveActivityIntentsForApp(
+  config: IntentsConfig
+): string {
   const defs = config.liveActivities || [];
   const intents = collectAllButtonIntents(defs);
   if (intents.size === 0) {
@@ -631,7 +670,10 @@ ${stubs}`;
  * shared UserDefaults and posting a Darwin notification — the same IPC pattern
  * used by the main app's Siri shortcut intents.
  */
-function generateIntentStubs(defs: LiveActivityDefinition[], appGroupId?: string): string {
+function generateIntentStubs(
+  defs: LiveActivityDefinition[],
+  appGroupId?: string
+): string {
   const intents = collectAllButtonIntents(defs);
   if (intents.size === 0) {
     return '';
@@ -691,9 +733,7 @@ function generateGenericAttributesForWidget(): string {
  * - Single LiveActivityWidget with switch dispatch
  * - Optional WidgetBundle entry point
  */
-export function generateLiveActivitySwiftFile(
-  config: IntentsConfig
-): string {
+export function generateLiveActivitySwiftFile(config: IntentsConfig): string {
   const defs = config.liveActivities || [];
   if (defs.length === 0) {
     return '';

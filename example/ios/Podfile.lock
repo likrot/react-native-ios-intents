@@ -8,7 +8,7 @@ PODS:
   - hermes-engine (0.81.1):
     - hermes-engine/Pre-built (= 0.81.1)
   - hermes-engine/Pre-built (0.81.1)
-  - IosIntents (0.2.0):
+  - IosIntents (0.2.1):
     - boost
     - DoubleConversion
     - fast_float
@@ -2589,7 +2589,7 @@ SPEC CHECKSUMS:
   fmt: a40bb5bd0294ea969aaaba240a927bd33d878cdd
   glog: 5683914934d5b6e4240e497e0f4a3b42d1854183
   hermes-engine: 4f8246b1f6d79f625e0d99472d1f3a71da4d28ca
-  IosIntents: f6d9cec7e00978d3264d1eb78fe78252eae6ec28
+  IosIntents: 100aaca2d17c4d54020948a466f9864f09f52174
   MMKVCore: f2dd4c9befea04277a55e84e7812f930537993df
   NitroMmkv: afbc5b2fbf963be567c6c545aa1efcf6a9cec68e
   NitroModules: a08d4fbf973527df2d061c5f02cb192c2c261a09

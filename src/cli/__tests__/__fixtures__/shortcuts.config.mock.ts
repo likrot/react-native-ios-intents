@@ -10,11 +10,7 @@ export const mockIntentsConfig: IntentsConfig = {
       identifier: 'startTimer',
       title: 'Start Timer',
       description: 'Start a new timer session',
-      phrases: [
-        'Start timer',
-        'Begin timer',
-        'Start tracking time',
-      ],
+      phrases: ['Start timer', 'Begin timer', 'Start tracking time'],
       systemImageName: 'timer',
       stateDialogs: [
         {
@@ -29,11 +25,7 @@ export const mockIntentsConfig: IntentsConfig = {
       identifier: 'stopTimer',
       title: 'Stop Timer',
       description: 'Stop the current timer',
-      phrases: [
-        'Stop timer',
-        'End timer',
-        'Finish timing',
-      ],
+      phrases: ['Stop timer', 'End timer', 'Finish timing'],
       systemImageName: 'stop.circle',
       stateDialogs: [
         {

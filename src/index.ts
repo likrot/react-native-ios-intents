@@ -109,7 +109,14 @@ export const SiriShortcuts = {
    *
    * @template T - Generic type for type-safe shortcuts (use generated ShortcutInvocation type)
    */
-  addEventListener: <T extends { identifier: string; nonce: string; parameters?: Record<string, unknown>; userConfirmed?: boolean } = ShortcutInvocation>(
+  addEventListener: <
+    T extends {
+      identifier: string;
+      nonce: string;
+      parameters?: Record<string, unknown>;
+      userConfirmed?: boolean;
+    } = ShortcutInvocation,
+  >(
     event: 'shortcut',
     listener: (shortcut: T, respond: RespondCallback) => void | Promise<void>
   ) => manager.addEventListener<T>(event, listener),
@@ -189,7 +196,9 @@ export const LiveActivities = {
    * return () => sub.remove();
    * ```
    */
-  addEventListener: <T extends LiveActivityButtonAction = LiveActivityButtonAction>(
+  addEventListener: <
+    T extends LiveActivityButtonAction = LiveActivityButtonAction,
+  >(
     event: 'button',
     listener: (action: T) => void
   ) => liveActivitiesManager.addEventListener<T>(event, listener),
@@ -238,7 +247,7 @@ export const LiveActivities = {
 
   /**
    * Get info about currently running Live Activities
-   * 
+   *
    * @returns Array of running Live Activity info objects
    */
   getRunningActivities: () => liveActivitiesManager.getRunningActivities(),

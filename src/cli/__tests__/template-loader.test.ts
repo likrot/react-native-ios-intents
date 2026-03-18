@@ -1,4 +1,8 @@
-import { loadTemplate, fillTemplate, clearTemplateCache } from '../template-loader';
+import {
+  loadTemplate,
+  fillTemplate,
+  clearTemplateCache,
+} from '../template-loader';
 
 describe('template-loader', () => {
   beforeEach(() => {
@@ -9,7 +13,9 @@ describe('template-loader', () => {
     it('loads CodableValue.swift.template', () => {
       const content = loadTemplate('CodableValue.swift.template');
       expect(content).toContain('enum CodableValue: Codable, Hashable');
-      expect(content).toContain('struct GenericActivityAttributes: ActivityAttributes');
+      expect(content).toContain(
+        'struct GenericActivityAttributes: ActivityAttributes'
+      );
     });
 
     it('loads WidgetBundle.swift.template', () => {
@@ -129,7 +135,9 @@ describe('template-loader', () => {
         APP_GROUP_CONSTANT: 'APP_GROUP_ID',
         COMMAND_ID: 'pauseTimer',
       });
-      expect(result).toContain('struct LA_PauseTimerIntent: LiveActivityIntent');
+      expect(result).toContain(
+        'struct LA_PauseTimerIntent: LiveActivityIntent'
+      );
       expect(result).toContain('"PauseTimer"');
       expect(result).toContain('APP_GROUP_ID');
       expect(result).toContain('"pauseTimer"');

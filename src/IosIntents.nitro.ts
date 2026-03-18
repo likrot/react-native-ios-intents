@@ -56,7 +56,9 @@ export interface IosIntents extends HybridObject<{ ios: 'swift' }> {
    *
    * @param callback - Function to call with button action data
    */
-  setLiveActivityButtonCallback(callback: (data: NativeLiveActivityButtonData) => void): void;
+  setLiveActivityButtonCallback(
+    callback: (data: NativeLiveActivityButtonData) => void
+  ): void;
 
   /**
    * Reads a string value from the shared UserDefaults (App Group)

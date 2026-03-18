@@ -43,12 +43,14 @@ class Logger {
    * Get the current transport or default to console
    */
   private getTransport(): LoggerTransport {
-    return this.transport || {
-      debug: console.debug,
-      info: console.log,
-      warn: console.warn,
-      error: console.error,
-    };
+    return (
+      this.transport || {
+        debug: console.debug,
+        info: console.log,
+        warn: console.warn,
+        error: console.error,
+      }
+    );
   }
 
   /**

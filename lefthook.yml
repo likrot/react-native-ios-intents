@@ -1,0 +1,17 @@
+commit-msg:
+  commands:
+    commitlint:
+      run: npx commitlint --edit {1}
+
+pre-commit:
+  commands:
+    typecheck:
+      run: npm run typecheck
+    format-fix:
+      glob: "*.{js,ts,tsx}"
+      run: npx prettier --write {staged_files} && git add {staged_files}
+
+pre-push:
+  commands:
+    test:
+      run: npm test

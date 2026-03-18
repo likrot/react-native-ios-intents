@@ -6,26 +6,47 @@ import {
   generateSwiftFile,
 } from '../swift-codegen';
 import type { IntentsConfig, ShortcutDefinition } from '../../types';
-import { mockIntentsConfig, minimalConfig } from './__fixtures__/shortcuts.config.mock';
+import {
+  mockIntentsConfig,
+  minimalConfig,
+} from './__fixtures__/shortcuts.config.mock';
 
 describe('Swift Code Generation', () => {
   describe('generateMessageInterpolation', () => {
     it('should return plain string when no variables', () => {
-      const result = generateMessageInterpolation('Hello World', 'test.key', false);
+      const result = generateMessageInterpolation(
+        'Hello World',
+        'test.key',
+        false
+      );
       expect(result).toBe('"Hello World"');
     });
 
     it('should return localized string when no variables and localization enabled', () => {
-      const result = generateMessageInterpolation('Hello World', 'test.key', true);
-      expect(result).toBe('String(localized: "test.key", defaultValue: "Hello World")');
+      const result = generateMessageInterpolation(
+        'Hello World',
+        'test.key',
+        true
+      );
+      expect(result).toBe(
+        'String(localized: "test.key", defaultValue: "Hello World")'
+      );
     });
 
     it('should generate interpolation code for single variable', () => {
-      const result = generateMessageInterpolation('Hello ${name}', 'test.key', false);
+      const result = generateMessageInterpolation(
+        'Hello ${name}',
+        'test.key',
+        false
+      );
 
       expect(result).toContain('var message = "Hello ${name}"');
-      expect(result).toContain('if let value = defaults.string(forKey: "appState_name")');
-      expect(result).toContain('message.replacingOccurrences(of: "${name}", with: value)');
+      expect(result).toContain(
+        'if let value = defaults.string(forKey: "appState_name")'
+      );
+      expect(result).toContain(
+        'message.replacingOccurrences(of: "${name}", with: value)'
+      );
     });
 
     it('should generate interpolation code for multiple variables', () => {
@@ -42,15 +63,27 @@ describe('Swift Code Generation', () => {
     });
 
     it('should handle numeric values with NSNumber', () => {
-      const result = generateMessageInterpolation('Count: ${count}', 'test.key', false);
+      const result = generateMessageInterpolation(
+        'Count: ${count}',
+        'test.key',
+        false
+      );
 
-      expect(result).toContain('if let numValue = defaults.object(forKey: "appState_count") as? NSNumber');
+      expect(result).toContain(
+        'if let numValue = defaults.object(forKey: "appState_count") as? NSNumber'
+      );
     });
 
     it('should use localized string as base when localization enabled', () => {
-      const result = generateMessageInterpolation('Hello ${name}', 'test.key', true);
+      const result = generateMessageInterpolation(
+        'Hello ${name}',
+        'test.key',
+        true
+      );
 
-      expect(result).toContain('var message = String(localized: "test.key", defaultValue: "Hello ${name}")');
+      expect(result).toContain(
+        'var message = String(localized: "test.key", defaultValue: "Hello ${name}")'
+      );
     });
   });
 
@@ -143,8 +176,12 @@ describe('Swift Code Generation', () => {
       const result = generateIntentStruct(basicShortcut, false);
 
       expect(result).toContain('struct TestActionIntent: AppIntent');
-      expect(result).toContain('static var title: LocalizedStringResource = "Test Action"');
-      expect(result).toContain('func perform() async throws -> some IntentResult & ProvidesDialog');
+      expect(result).toContain(
+        'static var title: LocalizedStringResource = "Test Action"'
+      );
+      expect(result).toContain(
+        'func perform() async throws -> some IntentResult & ProvidesDialog'
+      );
       expect(result).toContain('@available(iOS 16.0, *)');
     });
 
@@ -178,21 +215,33 @@ describe('Swift Code Generation', () => {
       const result = generateIntentStruct(shortcutWithParams, true);
 
       // Check parameter declarations (with localization keys)
-      expect(result).toContain('@Parameter(title: LocalizedStringResource("addTask.parameters.0.title", defaultValue: "Task Name"))');
+      expect(result).toContain(
+        '@Parameter(title: LocalizedStringResource("addTask.parameters.0.title", defaultValue: "Task Name"))'
+      );
       expect(result).toContain('var taskName: String?');
-      expect(result).toContain('@Parameter(title: LocalizedStringResource("addTask.parameters.1.title", defaultValue: "Due Date"))');
+      expect(result).toContain(
+        '@Parameter(title: LocalizedStringResource("addTask.parameters.1.title", defaultValue: "Due Date"))'
+      );
       expect(result).toContain('var dueDate: Date?');
-      expect(result).toContain('@Parameter(title: LocalizedStringResource("addTask.parameters.2.title", defaultValue: "Priority"), description: LocalizedStringResource("addTask.parameters.2.description", defaultValue: "Task priority level"))');
+      expect(result).toContain(
+        '@Parameter(title: LocalizedStringResource("addTask.parameters.2.title", defaultValue: "Priority"), description: LocalizedStringResource("addTask.parameters.2.description", defaultValue: "Task priority level"))'
+      );
       expect(result).toContain('var priority: Double?');
 
       // Check parameter writes
       expect(result).toContain('Write parameter values to shared UserDefaults');
       expect(result).toContain('if let taskName = taskName');
-      expect(result).toContain('defaults.set(taskName, forKey: "IosIntentsParam_taskName")');
+      expect(result).toContain(
+        'defaults.set(taskName, forKey: "IosIntentsParam_taskName")'
+      );
       expect(result).toContain('if let dueDate = dueDate');
-      expect(result).toContain('defaults.set(dueDate.timeIntervalSince1970, forKey: "IosIntentsParam_dueDate")');
+      expect(result).toContain(
+        'defaults.set(dueDate.timeIntervalSince1970, forKey: "IosIntentsParam_dueDate")'
+      );
       expect(result).toContain('if let priority = priority');
-      expect(result).toContain('defaults.set(priority, forKey: "IosIntentsParam_priority")');
+      expect(result).toContain(
+        'defaults.set(priority, forKey: "IosIntentsParam_priority")'
+      );
     });
 
     it('should generate localized parameter titles when localization enabled', () => {
@@ -212,7 +261,9 @@ describe('Swift Code Generation', () => {
 
       const result = generateIntentStruct(shortcutWithParams, true);
 
-      expect(result).toContain('@Parameter(title: LocalizedStringResource("sendMessage.parameters.0.title", defaultValue: "Recipient"), description: LocalizedStringResource("sendMessage.parameters.0.description", defaultValue: "Message recipient"))');
+      expect(result).toContain(
+        '@Parameter(title: LocalizedStringResource("sendMessage.parameters.0.title", defaultValue: "Recipient"), description: LocalizedStringResource("sendMessage.parameters.0.description", defaultValue: "Message recipient"))'
+      );
     });
 
     it('should handle all parameter types correctly', () => {
@@ -237,16 +288,26 @@ describe('Swift Code Generation', () => {
       expect(result).toContain('var when: Date?');
 
       // Check writes
-      expect(result).toContain('defaults.set(text, forKey: "IosIntentsParam_text")');
-      expect(result).toContain('defaults.set(count, forKey: "IosIntentsParam_count")');
-      expect(result).toContain('defaults.set(enabled, forKey: "IosIntentsParam_enabled")');
-      expect(result).toContain('defaults.set(when.timeIntervalSince1970, forKey: "IosIntentsParam_when")');
+      expect(result).toContain(
+        'defaults.set(text, forKey: "IosIntentsParam_text")'
+      );
+      expect(result).toContain(
+        'defaults.set(count, forKey: "IosIntentsParam_count")'
+      );
+      expect(result).toContain(
+        'defaults.set(enabled, forKey: "IosIntentsParam_enabled")'
+      );
+      expect(result).toContain(
+        'defaults.set(when.timeIntervalSince1970, forKey: "IosIntentsParam_when")'
+      );
     });
 
     it('should use localized title when enabled', () => {
       const result = generateIntentStruct(basicShortcut, true);
 
-      expect(result).toContain('static var title: LocalizedStringResource = "testAction.title"');
+      expect(result).toContain(
+        'static var title: LocalizedStringResource = "testAction.title"'
+      );
     });
 
     it('should include description when provided', () => {
@@ -256,7 +317,9 @@ describe('Swift Code Generation', () => {
       };
       const result = generateIntentStruct(shortcutWithDesc, false);
 
-      expect(result).toContain('static var description = IntentDescription("A test action")');
+      expect(result).toContain(
+        'static var description = IntentDescription("A test action")'
+      );
     });
 
     it('should generate state dialog checks when provided', () => {
@@ -291,14 +354,18 @@ describe('Swift Code Generation', () => {
       const result = generateIntentStruct(shortcutWithConfirmation, false);
 
       expect(result).toContain('var userConfirmedOverride = false');
-      expect(result).toContain('defaults.set(userConfirmedOverride, forKey: "IosIntentsUserConfirmed")');
+      expect(result).toContain(
+        'defaults.set(userConfirmedOverride, forKey: "IosIntentsUserConfirmed")'
+      );
     });
 
     it('should include Darwin notification code', () => {
       const result = generateIntentStruct(basicShortcut, false);
 
       expect(result).toContain('CFNotificationCenterPostNotification');
-      expect(result).toContain('eu.eblank.likrot.iosintents.\\(bundleId).shortcut');
+      expect(result).toContain(
+        'eu.eblank.likrot.iosintents.\\(bundleId).shortcut'
+      );
     });
 
     it('should include polling loop with timeout', () => {
@@ -306,7 +373,9 @@ describe('Swift Code Generation', () => {
 
       expect(result).toContain('let timeout: TimeInterval = 5.0');
       expect(result).toContain('let pollInterval: TimeInterval = 0.1');
-      expect(result).toContain('while Date().timeIntervalSince(startTime) < timeout');
+      expect(result).toContain(
+        'while Date().timeIntervalSince(startTime) < timeout'
+      );
       expect(result).toContain('Task.sleep(nanoseconds:');
     });
 
@@ -356,7 +425,9 @@ describe('Swift Code Generation', () => {
     it('should use localized shortTitle when enabled', () => {
       const result = generateAppShortcut(basicShortcut, true);
 
-      expect(result).toContain('shortTitle: LocalizedStringResource("testAction.title"');
+      expect(result).toContain(
+        'shortTitle: LocalizedStringResource("testAction.title"'
+      );
     });
 
     it('should use plain string shortTitle when localization disabled', () => {
@@ -417,7 +488,9 @@ describe('Swift Code Generation', () => {
     it('should include AppShortcutsProvider', () => {
       const result = generateSwiftFile(config, false);
 
-      expect(result).toContain('struct GeneratedAppShortcutsProvider: AppShortcutsProvider');
+      expect(result).toContain(
+        'struct GeneratedAppShortcutsProvider: AppShortcutsProvider'
+      );
       expect(result).toContain('static var appShortcuts: [AppShortcut]');
       expect(result).toContain('StartTimerIntent()');
       expect(result).toContain('StopTimerIntent()');
@@ -430,7 +503,9 @@ describe('Swift Code Generation', () => {
       };
       const result = generateSwiftFile(configWithGroup, false);
 
-      expect(result).toContain('private let APP_GROUP_ID = "group.com.example.app"');
+      expect(result).toContain(
+        'private let APP_GROUP_ID = "group.com.example.app"'
+      );
     });
 
     it('should generate dynamic appGroupId when not provided', () => {
@@ -467,7 +542,9 @@ describe('Swift Code Generation', () => {
       expect(result).toContain('struct CheckStatusIntent: AppIntent');
 
       // Should include custom app group from config
-      expect(result).toContain('private let APP_GROUP_ID = "group.com.example.timer"');
+      expect(result).toContain(
+        'private let APP_GROUP_ID = "group.com.example.timer"'
+      );
 
       // Should handle state dialogs
       expect(result).toContain('appState_timerRunning');
@@ -485,7 +562,9 @@ describe('Swift Code Generation', () => {
 
       // Should have basic structure
       expect(result).toContain('struct SimpleActionIntent: AppIntent');
-      expect(result).toContain('static var title: LocalizedStringResource = "Simple Action"');
+      expect(result).toContain(
+        'static var title: LocalizedStringResource = "Simple Action"'
+      );
 
       // Should generate dynamic app group (no appGroupId in minimalConfig)
       expect(result).toContain('private var APP_GROUP_ID: String');
@@ -498,12 +577,18 @@ describe('Swift Code Generation', () => {
     it('should respect localization flag from fixture', () => {
       // mockIntentsConfig has localization: true
       const withLocalization = generateSwiftFile(mockIntentsConfig, true);
-      expect(withLocalization).toContain('LocalizedStringResource("startTimer.title"');
+      expect(withLocalization).toContain(
+        'LocalizedStringResource("startTimer.title"'
+      );
 
       // minimalConfig has no localization flag (defaults to false)
       const withoutLocalization = generateSwiftFile(minimalConfig, false);
-      expect(withoutLocalization).toContain('static var title: LocalizedStringResource = "Simple Action"');
-      expect(withoutLocalization).not.toContain('LocalizedStringResource("simpleAction.title"');
+      expect(withoutLocalization).toContain(
+        'static var title: LocalizedStringResource = "Simple Action"'
+      );
+      expect(withoutLocalization).not.toContain(
+        'LocalizedStringResource("simpleAction.title"'
+      );
     });
 
     it('should generate proper state dialog with variable interpolation', () => {
