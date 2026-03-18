@@ -9,7 +9,7 @@ echo "🧹 Starting pre-publication cleanup..."
 
 # 1. Remove Development Team ID from Xcode project
 echo "📝 Removing DEVELOPMENT_TEAM from project.pbxproj..."
-sed -i '' 's/DEVELOPMENT_TEAM = REDACTED;/DEVELOPMENT_TEAM = "";/' \
+sed -i '' 's/DEVELOPMENT_TEAM = [A-Z0-9]\{1,\};/DEVELOPMENT_TEAM = "";/' \
   example/ios/IosIntentsExample.xcodeproj/project.pbxproj
 
 # 2. Remove personal App Group from entitlements
