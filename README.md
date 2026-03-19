@@ -27,7 +27,7 @@ npm install react-native-ios-intents react-native-nitro-modules
 cd ios && pod install
 ```
 
-## Quick Start
+## Setup
 
 ### 1. Generate Configuration
 
@@ -61,21 +61,19 @@ export default config;
 Open your project in Xcode and add the required capabilities:
 
 1. **Siri** (Recommended)
-   - Select your target → **Signing & Capabilities**
-   - Click **"+ Capability"** → **Siri**
-   - Note: This may work without explicitly adding Siri capability when using App Intents framework (iOS 16+), but adding it is recommended
+   - Select your target → **Signing & Capabilities** → **"+ Capability"** → **Siri**
 
 2. **App Groups** (Required)
-   - Click **"+ Capability"** → **App Groups**
-   - Click **"+"** to add a new group
+   - **"+ Capability"** → **App Groups** → click **"+"** to add a new group
    - Use format: `group.{your.bundle.id}` (e.g., `group.com.myapp`)
-   - **Important:** The library automatically uses `group.{bundleId}` - ensure it matches
+   - The library automatically uses `group.{bundleId}` — ensure it matches
 
 3. **Add Generated Swift Files**
-   - After running `generate`, locate `ios/{YourApp}/GeneratedAppIntents.swift`
-   - Drag it into your Xcode project
-   - **Uncheck** "Copy items if needed"
+   - Locate `ios/{YourApp}/GeneratedAppIntents.swift`
+   - Drag it into your Xcode project, **uncheck** "Copy items if needed"
    - Ensure your app target is selected
+
+See the [iOS Setup Guide](./docs/setup.md) for more details.
 
 ### 4. Regenerate & Build
 
@@ -122,6 +120,18 @@ function App() {
 
 Now say **"Hey Siri, start timer in [Your App Name]"** and Siri will respond with your message!
 
+## Example App
+
+The `example/` directory contains a complete timer app demonstrating Siri Shortcuts with parameters, state dialogs, and Live Activities.
+
+```bash
+npm install
+cd example && npm install && cd ios && pod install && cd ../..
+npm run nitrogen
+npm run generate-shortcuts:example
+npm run example ios
+```
+
 ## API Reference
 
 ### `SiriShortcuts.addEventListener<T>(event, listener)`
@@ -141,11 +151,10 @@ import type { ShortcutInvocation } from './shortcuts.generated';
 
 const subscription = SiriShortcuts.addEventListener<ShortcutInvocation>('shortcut', (shortcut, respond) => {
   // TypeScript knows exact shortcut identifiers: 'startTimer' | 'stopTimer' | ...
-  // Full autocomplete for shortcut.identifier
 
   if (shortcut.identifier === 'addTask') {
     // TypeScript knows shortcut.parameters.taskName exists and is a string
-    console.log(shortcut.parameters.taskName); // Autocomplete works!
+    console.log(shortcut.parameters.taskName);
   }
 
   // Check if user confirmed a state dialog
@@ -186,43 +195,38 @@ SiriShortcuts.cleanup();
 SiriShortcuts.cleanup(['timerRunning', 'taskName']);
 ```
 
-## Documentation
+### `LiveActivities`
 
-- [iOS Setup Guide](./docs/setup.md) - Detailed setup instructions
-- [Configuration](./docs/configuration.md) - Config options and types
-- [State Dialogs](./docs/state-dialogs.md) - Smart confirmations and messages
-- [Localization](./docs/localization.md) - Multi-language support
-- [Architecture](./docs/architecture.md) - How it works under the hood
-- [Testing](./docs/testing.md) - Testing and debugging
+```typescript
+import { LiveActivities } from 'react-native-ios-intents';
 
-## Example
+// Start — returns an activity ID
+const id = LiveActivities.startActivity('timerActivity', { taskName: 'Work' }, { timerStart: new Date(), isRunning: true });
 
-See the `example/` directory for a complete timer app implementation.
+// Update content state
+LiveActivities.updateActivity(id, 'timerActivity', { isRunning: false });
 
-```bash
-npm install
-cd example && npm install && cd ios && pod install && cd ../..
-npm run nitrogen
-npm run generate-shortcuts:example
-npm run example ios
+// End
+LiveActivities.endActivity(id, 'timerActivity');
+
+// Get running activities (useful for cleanup on app restart)
+const running = LiveActivities.getRunningActivities();
+// Returns: { activityId: string, activityType: string }[]
+
+// Listen for button taps on Live Activity
+const sub = LiveActivities.addEventListener('button', (action) => {
+  console.log(action.identifier); // e.g. 'pauseTimer'
+});
+sub.remove();
 ```
 
-## Known Issues / TODO
+See [Live Activities documentation](./docs/live-activities.md) for configuration, layout nodes, and setup details.
 
-### State Dialog API Uses Deprecated Confirmation Method
+## Shortcut Parameters
 
-The current state dialog feature with `requiresConfirmation: true` uses `requestConfirmation(result:)` which is deprecated in iOS 16+. The code works but shows compiler warnings.
+Capture voice input from users through Siri:
 
-**TODO:** Update to modern App Intents confirmation flow using:
-
-- `@Parameter` for confirmation values
-- Proper `IntentConfirmation` structure
-
-See: [Apple App Intents Documentation - Confirmation](https://developer.apple.com/documentation/appintents/dynamicoptionsprovider)
-
-### Shortcut Parameters
-
-The library supports capturing voice input from users through Siri parameters:
+**Supported types:** `string`, `number`, `boolean`, `date`
 
 ```typescript
 // intents.config.ts
@@ -231,18 +235,8 @@ The library supports capturing voice input from users through Siri parameters:
   title: 'Add Task',
   phrases: ['Add a task', 'Create a task'],
   parameters: [
-    {
-      name: 'taskName',
-      title: 'Task Name',
-      type: 'string',
-      optional: false
-    },
-    {
-      name: 'dueDate',
-      title: 'Due Date',
-      type: 'date',
-      optional: true
-    }
+    { name: 'taskName', title: 'Task Name', type: 'string', optional: false },
+    { name: 'dueDate', title: 'Due Date', type: 'date', optional: true }
   ]
 }
 ```
@@ -264,50 +258,18 @@ SiriShortcuts.addEventListener<ShortcutInvocation>('shortcut', (shortcut, respon
 });
 ```
 
-**Supported parameter types:** `string`, `number`, `boolean`, `date`
+See [Configuration](./docs/configuration.md) for more options and details.
 
-### Live Activities
+## Live Activities
 
-Config-driven [Live Activities](https://developer.apple.com/documentation/activitykit/displaying-live-data-with-live-activities) support. Define your Live Activity layout in `intents.config.ts` and the library generates all the Swift code — [ActivityAttributes](https://developer.apple.com/documentation/activitykit/activityattributes), SwiftUI views for the [Lock Screen](https://developer.apple.com/design/human-interface-guidelines/live-activities#Lock-Screen) and [Dynamic Island](https://developer.apple.com/design/human-interface-guidelines/live-activities#Dynamic-Island), and the Widget Bundle.
-
-> **Prerequisites:** Requires iOS 16.2+ and a [Widget Extension target](https://developer.apple.com/documentation/widgetkit/creating-a-widget-extension) in your Xcode project. See Apple's [ActivityKit guide](https://developer.apple.com/documentation/activitykit) for background on how Live Activities work.
-
-#### Configuration
-
-Each Live Activity definition has:
-
-- **`attributes`** — Static data set once when the activity starts (e.g., task name)
-- **`contentState`** — Dynamic data updated while the activity is running (e.g., elapsed time)
-- **`lockScreenLayout`** — Required SwiftUI layout for the Lock Screen presentation
-- **`dynamicIslandCompact`** / **`dynamicIslandExpanded`** — Optional [Dynamic Island](https://developer.apple.com/documentation/activitykit/displaying-live-data-with-live-activities#Display-an-activity-in-the-Dynamic-Island) presentations
-
-**Supported field types:** `string`, `number`, `boolean`, `date`
-
-**Layout node types:**
-
-| Node | Description | Key properties |
-|------|-------------|----------------|
-| `text` | Text label, supports `${field}` interpolation | `value`, `font`, `color`, `monospacedDigit` |
-| `image` | SF Symbol icon | `systemImage`, `color` |
-| `spacer` | Flexible space | — |
-| `progress` | Progress bar (0.0–1.0) | `progressField` |
-| `timer` | System-rendered timer (`Text(timerInterval:)`) | `timerStartField`, `timerEndField`, `countsDown`, `font` |
-| `button` | Interactive button (`Button(intent:)`) | `shortcutIdentifier`, `title`, `systemImage` |
-| `hstack` | Horizontal stack | `alignment`, `spacing`, `children` |
-| `vstack` | Vertical stack | `alignment`, `spacing`, `children` |
-| `zstack` | Overlay stack | `alignment`, `children` |
-
-**Fonts:** `largeTitle`, `title`, `title2`, `title3`, `headline`, `body`, `caption`, `caption2`
-**Colors:** `primary`, `secondary`, `red`, `green`, `blue`, `orange`, `white`
+Config-driven [Live Activities](https://developer.apple.com/documentation/activitykit/displaying-live-data-with-live-activities) for iOS 16.2+. Define your layout in `intents.config.ts` and the library generates SwiftUI views, ActivityAttributes, and the Widget Bundle.
 
 ```typescript
 const config: IntentsConfig = {
   shortcuts: [...],
   liveActivities: [{
     identifier: 'timerActivity',
-    attributes: {
-      taskName: { type: 'string', title: 'Task Name' }
-    },
+    attributes: { taskName: { type: 'string', title: 'Task Name' } },
     contentState: {
       timerStart: { type: 'date', title: 'Timer Start' },
       isRunning: { type: 'boolean', title: 'Running' }
@@ -317,157 +279,41 @@ const config: IntentsConfig = {
       children: [
         { type: 'text', value: '${taskName}', font: 'headline' },
         { type: 'spacer' },
-        { type: 'timer', timerStartField: 'timerStart', font: 'title', monospacedDigit: true },
-        {
-          type: 'hstack', spacing: 8,
-          children: [
-            { type: 'button', shortcutIdentifier: 'pauseTimer', title: 'Pause', systemImage: 'pause.fill' },
-            { type: 'button', shortcutIdentifier: 'resumeTimer', title: 'Resume', systemImage: 'play.fill' }
-          ]
-        }
+        { type: 'timer', timerStartField: 'timerStart', font: 'title', monospacedDigit: true }
       ]
     }
   }]
 };
 ```
 
-#### Timer Display
+See [Live Activities documentation](./docs/live-activities.md) for timer display, interactive buttons, conditional visibility, widget extension setup, and more.
 
-The `timer` node generates `Text(timerInterval:countsDown:)` — a system-rendered timer that counts automatically, works when the app is killed, and animates smoothly. No polling from JavaScript needed.
+## Documentation
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `timerStartField` | `string` | **Required.** contentState field name holding the start Date (Unix timestamp) |
-| `timerEndField` | `string` | Optional. contentState field name holding the end Date. If omitted, counts up indefinitely |
-| `countsDown` | `boolean` | Count direction. Default: `false` (counts up) |
-| `font`, `color`, `monospacedDigit` | — | Same modifiers as `text` nodes |
+- [iOS Setup Guide](./docs/setup.md) - Detailed setup instructions
+- [Configuration](./docs/configuration.md) - Config options and types
+- [State Dialogs](./docs/state-dialogs.md) - Smart confirmations and messages
+- [Localization](./docs/localization.md) - Multi-language support
+- [Live Activities](./docs/live-activities.md) - Full Live Activities guide
+- [Testing](./docs/testing.md) - Testing and debugging
+- [Architecture](./CONTRIBUTING.md#architecture) - How it works under the hood
 
-#### Interactive Buttons
+## Contributing
 
-The `button` node generates `Button(intent:)` with a `LiveActivityIntent` that runs in the background. This enables pause/resume/stop directly from the Lock Screen or Dynamic Island.
+We welcome contributions! See [CONTRIBUTING.md](./CONTRIBUTING.md) for development setup, code generation workflow, and architecture details.
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `shortcutIdentifier` | `string` | **Required.** Identifier for the button action (generates `LA_<PascalCase>Intent`) |
-| `title` | `string` | Button label text |
-| `systemImage` | `string` | Optional SF Symbol. When set, renders as `Label(title, systemImage:)` |
+## Known Issues
 
-Buttons use `LiveActivityIntent` — they execute in the main app's background process without foregrounding the app.
+### State Dialog API Uses Deprecated Confirmation Method
 
-#### staleDate
+The current state dialog feature with `requiresConfirmation: true` uses `requestConfirmation(result:)` which is deprecated in iOS 16+. The code works but shows compiler warnings.
 
-Pass a `staleDate` to signal when the Live Activity data becomes outdated. The system dims the activity after this date.
+**TODO:** Update to modern App Intents confirmation flow using:
 
-```typescript
-const staleDate = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes from now
-LiveActivities.startActivity('timerActivity', { taskName: 'Work' }, { timerStart: new Date() }, staleDate);
-LiveActivities.updateActivity(id, 'timerActivity', { timerStart: new Date() }, staleDate);
-```
+- `@Parameter` for confirmation values
+- Proper `IntentConfirmation` structure
 
-#### Behavior When App Is Killed
-
-- **Timer** keeps counting (system-rendered via `Text(timerInterval:)`)
-- **Buttons** use LiveActivityIntent (runs in background without foregrounding)
-- **Other fields** freeze at their last value
-- Use `staleDate` to signal when data is outdated
-
-> **Push Token Updates (Coming Soon):** Server-driven updates via APNs push tokens are planned for a future release.
-
-#### JS API
-
-```typescript
-import { LiveActivities } from 'react-native-ios-intents';
-
-// Start — returns an activity ID (system-rendered timer, no polling needed)
-const id = LiveActivities.startActivity('timerActivity', { taskName: 'Work' }, { timerStart: new Date(), isRunning: true });
-
-// Update content state
-LiveActivities.updateActivity(id, 'timerActivity', { isRunning: false });
-
-// End
-LiveActivities.endActivity(id, 'timerActivity');
-
-// Get running activities (useful for cleanup on app restart)
-const running = LiveActivities.getRunningActivities();
-// Returns: { activityId: string, activityType: string }[]
-
-// Listen for button taps on Live Activity
-const sub = LiveActivities.addEventListener('button', (action) => {
-  console.log(action.identifier); // e.g. 'pauseTimer'
-  // Handle the action...
-});
-sub.remove(); // cleanup
-```
-
-#### Widget Extension Setup
-
-After running `npx react-native-ios-intents generate`:
-
-1. Add a Widget Extension target in Xcode (File → New → Target → Widget Extension)
-2. Copy `GeneratedLiveActivity.swift` to your Widget Extension target directory, or set `widgetExtensionTarget` in your config to automate this:
-
-   ```typescript
-   const config: IntentsConfig = {
-     widgetExtensionTarget: 'MyWidgetExtension', // auto-copies on generate
-     // ...
-   };
-   ```
-
-3. Add App Group entitlement matching your main app
-4. Add `NSSupportsLiveActivities = YES` to your app's `Info.plist`
-
-> **Dual-target files:** `GeneratedLiveActivity.swift` goes in the Widget Extension target. If your Live Activity has interactive buttons, `GeneratedAppIntents.swift` will also contain `LA_*` prefixed `LiveActivityIntent` stubs that are automatically included in the main app target — no extra step needed.
-
-> See Apple's [Displaying live data with Live Activities](https://developer.apple.com/documentation/activitykit/displaying-live-data-with-live-activities) for more details on Widget Extension setup.
-
-#### Conditional Visibility (`showWhen`)
-
-Show or hide layout elements based on contentState values at runtime:
-
-```typescript
-lockScreenLayout: {
-  type: 'hstack',
-  children: [
-    { type: 'button', shortcutIdentifier: 'stopTimer', title: 'Pause',
-      showWhen: { field: 'isRunning', equals: true } },
-    { type: 'button', shortcutIdentifier: 'startTimer', title: 'Resume',
-      showWhen: { field: 'isRunning', equals: false } },
-  ]
-}
-```
-
-Control visibility from JavaScript by updating contentState:
-
-```typescript
-// Show "Pause", hide "Resume"
-LiveActivities.updateActivity(id, 'timerActivity', { isRunning: true });
-
-// Switch: hide "Pause", show "Resume"
-LiveActivities.updateActivity(id, 'timerActivity', { isRunning: false });
-```
-
-#### Existing Widget Extension?
-
-If your app already has a Widget Extension with its own `@main` WidgetBundle, set `liveActivityWidgetBundle: false` to prevent conflicts:
-
-```typescript
-const config: IntentsConfig = {
-  shortcuts: [...],
-  liveActivityWidgetBundle: false, // Don't generate @main WidgetBundle
-  liveActivities: [...]
-};
-```
-
-Then add `LiveActivityWidget` to your existing WidgetBundle:
-
-```swift
-@main struct MyWidgetBundle: WidgetBundle {
-    var body: some Widget {
-        MyExistingWidget()
-        LiveActivityWidget()  // Add generated widget here
-    }
-}
-```
+See: [Apple App Intents Documentation - Confirmation](https://developer.apple.com/documentation/appintents/dynamicoptionsprovider)
 
 ## License
 

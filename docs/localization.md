@@ -5,7 +5,9 @@ Enable localization to translate your Siri shortcuts into multiple languages.
 ## Enabling Localization
 
 ```typescript
-const config: ShortcutsConfig = {
+import type { IntentsConfig } from 'react-native-ios-intents';
+
+const config: IntentsConfig = {
   localization: true,  // Enable localization support
   shortcuts: [
     {

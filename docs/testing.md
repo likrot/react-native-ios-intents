@@ -56,7 +56,10 @@ Look for messages from your generated App Intents (e.g., `[StartTimerIntent]`).
 
 ## Running the Example App
 
+> **Note:** These instructions are for library contributors working from the repository. The `prepare` script builds the CLI from source, generates Nitro bindings, and compiles the library — steps that are already done for consumers via npm.
+
 1. **Install dependencies:**
+
    ```bash
    npm install
    cd example && npm install
@@ -64,16 +67,19 @@ Look for messages from your generated App Intents (e.g., `[StartTimerIntent]`).
    ```
 
 2. **Generate Nitro bindings:**
+
    ```bash
    npm run prepare
    ```
 
 3. **Generate shortcuts for the example:**
+
    ```bash
    npm run generate-shortcuts:example
    ```
 
 4. **Run the example:**
+
    ```bash
    npm run example ios
    ```
