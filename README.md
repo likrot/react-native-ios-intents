@@ -1,6 +1,6 @@
 # react-native-ios-intents
 
-React Native library for iOS Siri Shortcuts using App Intents.
+React Native library for iOS Siri Shortcuts and Live Activities using App Intents.
 
 Built with [Nitro Modules](https://nitro.margelo.com/) for optimal performance.
 
