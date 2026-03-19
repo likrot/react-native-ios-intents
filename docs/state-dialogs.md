@@ -21,7 +21,7 @@ SiriShortcuts.updateAppState({
 ### 2. Configure State Dialogs in Your Shortcuts
 
 ```typescript
-const config: ShortcutsConfig = {
+const config: IntentsConfig = {
   shortcuts: [
     {
       identifier: 'startTimer',
@@ -72,7 +72,7 @@ const config: ShortcutsConfig = {
 ## Example: Timer Override Confirmation
 
 ```typescript
-// shortcuts.config.ts
+// intents.config.ts
 stateDialogs: [
   {
     stateKey: 'timerRunning',
@@ -136,7 +136,7 @@ stateDialogs: [
 State dialog messages support dynamic variable interpolation using `${variableName}` syntax:
 
 ```typescript
-// shortcuts.config.ts
+// intents.config.ts
 stateDialogs: [
   {
     stateKey: 'timerRunning',
