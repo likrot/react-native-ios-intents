@@ -21,6 +21,8 @@ SiriShortcuts.updateAppState({
 ### 2. Configure State Dialogs in Your Shortcuts
 
 ```typescript
+import type { IntentsConfig } from 'react-native-ios-intents';
+
 const config: IntentsConfig = {
   shortcuts: [
     {

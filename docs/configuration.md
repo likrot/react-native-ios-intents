@@ -82,7 +82,10 @@ interface LiveActivityDefinition {
   attributes: Record<string, FieldDefinition>;   // Static data set at start
   contentState: Record<string, FieldDefinition>; // Dynamic data updated at runtime
   lockScreenLayout: LayoutNode;              // Required Lock Screen SwiftUI layout
-  dynamicIslandCompact?: LayoutNode;         // Optional Dynamic Island compact view
+  dynamicIslandCompact?: {                    // Optional Dynamic Island compact view
+    leading: LayoutNode;                     //   Required leading content
+    trailing: LayoutNode;                    //   Required trailing content
+  };
   dynamicIslandExpanded?: {                  // Optional Dynamic Island expanded view
     leading?: LayoutNode;
     trailing?: LayoutNode;
@@ -93,7 +96,7 @@ interface LiveActivityDefinition {
 
 interface FieldDefinition {
   type: 'string' | 'number' | 'boolean' | 'date';
-  title: string;
+  title?: string;                                    // Optional human-readable title
 }
 ```
 

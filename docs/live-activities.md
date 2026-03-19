@@ -18,6 +18,8 @@ Each Live Activity definition has:
 ### Full Configuration Example
 
 ```typescript
+import type { IntentsConfig } from 'react-native-ios-intents';
+
 const config: IntentsConfig = {
   shortcuts: [...],
   liveActivities: [{
@@ -93,8 +95,10 @@ Buttons use `LiveActivityIntent` — they execute in the main app's background p
 Pass a `staleDate` to signal when the Live Activity data becomes outdated. The system dims the activity after this date.
 
 ```typescript
+import { LiveActivities } from 'react-native-ios-intents';
+
 const staleDate = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes from now
-LiveActivities.startActivity('timerActivity', { taskName: 'Work' }, { timerStart: new Date() }, staleDate);
+const id = LiveActivities.startActivity('timerActivity', { taskName: 'Work' }, { timerStart: new Date() }, staleDate);
 LiveActivities.updateActivity(id, 'timerActivity', { timerStart: new Date() }, staleDate);
 ```
 
